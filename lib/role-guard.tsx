@@ -20,10 +20,10 @@ export function RoleGuard({ children, allowedRoles, redirectTo = "/login" }: Rol
         router.push("/login")
       } else if (!allowedRoles.includes(user.role)) {
         // Redirigir al dashboard correcto según su rol
-        if (user.role === "PROPIETARIO") {
-          router.push("/dashboard/propietario")
+        if (user.role === "LANDLORD") {
+          router.push("/dashboard/landlord")
         } else {
-          router.push("/dashboard/arrendatario")
+          router.push("/dashboard/tenant")
         }
       }
     }
