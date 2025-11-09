@@ -24,7 +24,7 @@ export default function TenantDashboard() {
   }, [user])
 
   return (
-    <RoleGuard allowedRoles={["ARRENDATARIO"]}>
+    <RoleGuard allowedRoles={["TENANT"]}>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
         {/* Header */}
         <header className="bg-white border-b shadow-sm sticky top-0 z-50">
