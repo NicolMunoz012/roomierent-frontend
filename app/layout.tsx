@@ -15,8 +15,15 @@ const playfair = Playfair_Display({
 })
 
 export const metadata: Metadata = {
-  title: "RoomieRent - Find Your Perfect Home",
-  description: "Discover houses, apartments, and rooms for rent in your city",
+  title: "RoomieRent - Encuentra tu Hogar Perfecto",
+  description: "Descubre casas, apartamentos y habitaciones en arriendo con recomendaciones personalizadas por inteligencia artificial",
+  keywords: ["arriendo", "apartamentos", "casas", "habitaciones", "inmuebles", "Colombia", "Pasto", "IA"],
+  authors: [{ name: "RoomieRent" }],
+  openGraph: {
+    title: "RoomieRent - Encuentra tu Hogar Perfecto",
+    description: "Descubre propiedades en arriendo con IA",
+    type: "website",
+  },
 }
 
 export default function RootLayout({
@@ -25,7 +32,12 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${playfair.variable}`}>
+    <html lang="es" className={`${inter.variable} ${playfair.variable}`}>
+      <head>
+        <link rel="icon" href="/favicon.ico" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="theme-color" content="#3b82f6" />
+      </head>
       <body className="antialiased">
         <AuthProvider>{children}</AuthProvider>
       </body>

@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Home, Eye, EyeOff } from "lucide-react"
+import { Home, Eye, EyeOff, Mail, Lock, ArrowRight } from "lucide-react"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -31,17 +31,17 @@ export default function LoginPage() {
     setError("")
 
     if (!email.trim()) {
-      setError("Email is required")
+      setError("El correo electrónico es obligatorio")
       return
     }
 
     if (!validateEmail(email)) {
-      setError("Please enter a valid email address")
+      setError("Por favor ingresa un correo electrónico válido")
       return
     }
 
     if (!password) {
-      setError("Password is required")
+      setError("La contraseña es obligatoria")
       return
     }
 
@@ -53,29 +53,43 @@ export default function LoginPage() {
       if (success) {
         router.push("/dashboard")
       } else {
-        setError("Invalid email or password")
+        setError("Correo o contraseña incorrectos")
       }
     } catch (err) {
-      setError("An error occurred. Please try again.")
+      setError("Ocurrió un error. Por favor intenta de nuevo.")
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen bg-muted flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
+        {/* Logo */}
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2 mb-4">
-            <Home className="h-8 w-8 text-primary" />
-            <span className="font-serif text-3xl font-bold text-foreground">RentSpace</span>
+          <Link 
+            href="/" 
+            className="inline-flex items-center gap-2 mb-4 hover:opacity-80 transition-opacity group"
+          >
+            <div className="h-12 w-12 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+              <Home className="h-6 w-6 text-white" />
+            </div>
+            <span className="font-serif text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              RoomieRent
+            </span>
           </Link>
+          <p className="text-muted-foreground text-sm">
+            Tu hogar perfecto te está esperando
+          </p>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl">Welcome back</CardTitle>
-            <CardDescription>Sign in to your account to continue</CardDescription>
+        {/* Card de Login */}
+        <Card className="shadow-xl border-2">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl font-bold">Bienvenido de nuevo</CardTitle>
+            <CardDescription>
+              Ingresa a tu cuenta para continuar
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -87,47 +101,51 @@ export default function LoginPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="email">
-                  Email <span className="text-red-500">*</span>
+                  Correo Electrónico <span className="text-red-500">*</span>
                 </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  disabled={isLoading}
-                />
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="tu@ejemplo.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    disabled={isLoading}
+                    className="pl-10"
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password">
-                    Password <span className="text-red-500">*</span>
+                    Contraseña <span className="text-red-500">*</span>
                   </Label>
-                  {/* ← NUEVO: Link de recuperación */}
                   <Link
                     href="/forgot-password"
-                    className="text-sm text-primary hover:underline"
+                    className="text-sm text-blue-600 hover:text-blue-700 hover:underline"
                   >
-                    Forgot password?
+                    ¿Olvidaste tu contraseña?
                   </Link>
                 </div>
                 <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="Enter your password"
+                    placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     disabled={isLoading}
-                    className="pr-10"
+                    className="pl-10 pr-10"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                     disabled={isLoading}
                   >
                     {showPassword ? (
@@ -139,19 +157,39 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Signing in..." : "Sign In"}
+              <Button 
+                type="submit" 
+                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md" 
+                size="lg"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  "Iniciando sesión..."
+                ) : (
+                  <>
+                    Iniciar Sesión
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </>
+                )}
               </Button>
 
               <p className="text-center text-sm text-muted-foreground">
-                Don't have an account?{" "}
-                <Link href="/signup" className="text-primary hover:underline">
-                  Sign up
+                ¿No tienes una cuenta?{" "}
+                <Link href="/signup" className="text-blue-600 font-medium hover:text-blue-700 hover:underline">
+                  Regístrate aquí
                 </Link>
               </p>
             </form>
           </CardContent>
         </Card>
+
+        {/* Footer */}
+        <p className="text-center text-sm text-muted-foreground mt-6">
+          Al iniciar sesión, aceptas nuestros{" "}
+          <Link href="/terms" className="underline hover:text-foreground">
+            Términos de Servicio
+          </Link>
+        </p>
       </div>
     </div>
   )
