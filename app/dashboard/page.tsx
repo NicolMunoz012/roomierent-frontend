@@ -12,10 +12,10 @@ export default function DashboardPage() {
     if (!isLoading) {
       if (!user) {
         router.push("/login")
-      } else if (user.role === "PROPIETARIO") {
-        router.push("/dashboard/propietario")
-      } else if (user.role === "ARRENDATARIO") {
-        router.push("/dashboard/arrendatario")
+      } else if (user.role === "LANDLORD") {
+        router.push("/dashboard/landlord")
+      } else if (user.role === "TENANT") {
+        router.push("/dashboard/tenant")
       }
     }
   }, [user, isLoading, router])
