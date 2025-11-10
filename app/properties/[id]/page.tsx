@@ -7,6 +7,9 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Bed, Bath, Maximize, MapPin, ArrowLeft, Check, Phone, Mail, User, Home, Heart, Eye } from "lucide-react"
+import { useAuth } from "@/lib/auth-context"
+import { useToast } from "@/hooks/use-toast"
+import { isFavorite, addFavorite, removeFavorite } from "@/lib/favorites"
 
 const API_URL = "http://localhost:8080/api/properties"
 
@@ -43,10 +46,26 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
   const [property, setProperty] = useState<Property | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [isFav, setIsFav] = useState<boolean>(false)
+  const { user } = useAuth()
+  const { toast } = useToast()
 
   useEffect(() => {
     loadProperty()
   }, [id])
+
+  useEffect(() => {
+    const loadFavoriteStatus = async () => {
+      if (!user?.email || !id) return
+      try {
+        const fav = await isFavorite(Number(id), user.email)
+        setIsFav(fav)
+      } catch (e) {
+        // ignore
+      }
+    }
+    loadFavoriteStatus()
+  }, [user, id])
 
   const loadProperty = async () => {
     try {
@@ -65,6 +84,28 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
       console.error("❌ Error:", error)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const toggleFavorite = async () => {
+    if (!user?.email || !property) {
+      toast({ title: "Debes iniciar sesión", description: "Inicia sesión para usar favoritos" })
+      return
+    }
+    try {
+      if (isFav) {
+        const res = await removeFavorite(property.id, user.email)
+        setIsFav(false)
+        setProperty({ ...property, favoriteCount: res.favoriteCount })
+        toast({ title: "Eliminado de favoritos" })
+      } else {
+        const res = await addFavorite(property.id, user.email)
+        setIsFav(true)
+        setProperty({ ...property, favoriteCount: res.favoriteCount })
+        toast({ title: "¡Agregado a tus favoritos!" })
+      }
+    } catch (e: any) {
+      toast({ title: "Error", description: e?.message || "No se pudo actualizar favoritos" })
     }
   }
 
@@ -187,10 +228,10 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
                   <Eye className="h-4 w-4" />
                   <span>{property.viewCount} vistas</span>
                 </div>
-                <div className="flex items-center gap-1">
-                  <Heart className="h-4 w-4" />
+                <button className="flex items-center gap-1" onClick={toggleFavorite} aria-label={isFav ? "Quitar de favoritos" : "Agregar a favoritos"}>
+                  <Heart className={`h-4 w-4 ${isFav ? "text-red-600 fill-red-600" : ""}`} />
                   <span>{property.favoriteCount} favoritos</span>
-                </div>
+                </button>
               </div>
 
               {/* Features */}

@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent } from "@/components/ui/card"
 import { Home, Search, MapPin, Bed, Bath, Maximize, Heart, Eye, ArrowLeft } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
+import { addFavorite, removeFavorite, getFavoriteIds } from "@/lib/favorites"
 
 const API_URL = "http://localhost:8080/api/properties"
 
@@ -37,6 +39,8 @@ export default function PropertiesPage() {
   const [properties, setProperties] = useState<Property[]>([])
   const [filteredProperties, setFilteredProperties] = useState<Property[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [favoriteIds, setFavoriteIds] = useState<number[]>([])
+  const { toast } = useToast()
 
   // Filtros
   const [searchQuery, setSearchQuery] = useState("")
@@ -47,6 +51,19 @@ export default function PropertiesPage() {
   useEffect(() => {
     loadProperties()
   }, [])
+
+  useEffect(() => {
+    const loadFavorites = async () => {
+      if (!user?.email) return
+      try {
+        const ids = await getFavoriteIds(user.email)
+        setFavoriteIds(ids)
+      } catch (e) {
+        console.error("❌ Error cargando favoritos", e)
+      }
+    }
+    loadFavorites()
+  }, [user])
 
   useEffect(() => {
     applyFilters()
@@ -67,6 +84,34 @@ export default function PropertiesPage() {
       console.error("❌ Error:", error)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const toggleFavorite = async (propertyId: number) => {
+    if (!user?.email) {
+      toast({ title: "Debes iniciar sesión", description: "Inicia sesión para usar favoritos" })
+      return
+    }
+    const isFav = favoriteIds.includes(propertyId)
+    try {
+      let favoriteCount: number | undefined
+      if (isFav) {
+        const res = await removeFavorite(propertyId, user.email)
+        favoriteCount = res.favoriteCount
+        setFavoriteIds((prev) => prev.filter((id) => id !== propertyId))
+        toast({ title: "Eliminado de favoritos" })
+      } else {
+        const res = await addFavorite(propertyId, user.email)
+        favoriteCount = res.favoriteCount
+        setFavoriteIds((prev) => [...prev, propertyId])
+        toast({ title: "¡Agregado a tus favoritos!" })
+      }
+      // Actualiza favoriteCount localmente
+      setProperties((prev) => prev.map((p) => p.id === propertyId && favoriteCount !== undefined ? { ...p, favoriteCount } : p))
+      applyFilters()
+    } catch (e: any) {
+      console.error(e)
+      toast({ title: "Error", description: e?.message || "No se pudo actualizar favoritos" })
     }
   }
 
@@ -131,6 +176,12 @@ export default function PropertiesPage() {
                   <Link href="/dashboard">
                     <ArrowLeft className="h-4 w-4 mr-2" />
                     Dashboard
+                  </Link>
+                </Button>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link href="/favorites">
+                    <Heart className="h-4 w-4 mr-2 text-red-600" />
+                    Favoritos
                   </Link>
                 </Button>
                 <span className="text-sm text-muted-foreground hidden md:block">
@@ -287,10 +338,11 @@ export default function PropertiesPage() {
                       className="absolute top-3 right-3 bg-white/90 hover:bg-white p-2 rounded-full transition-colors"
                       onClick={(e) => {
                         e.preventDefault()
-                        // TODO: Implementar favoritos
+                        toggleFavorite(property.id)
                       }}
+                      aria-label={favoriteIds.includes(property.id) ? "Quitar de favoritos" : "Agregar a favoritos"}
                     >
-                      <Heart className="h-4 w-4 text-red-500" />
+                      <Heart className={`h-4 w-4 ${favoriteIds.includes(property.id) ? "text-red-600 fill-red-600" : "text-red-500"}`} />
                     </button>
                   </div>
 
