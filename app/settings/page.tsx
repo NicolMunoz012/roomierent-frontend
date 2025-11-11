@@ -106,7 +106,7 @@ export default function SettingsPage() {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link href="/dashboard" className="flex items-center gap-2">
             <Home className="h-6 w-6 text-primary" />
-            <span className="font-serif text-2xl font-bold">RentSpace</span>
+            <span className="font-serif text-2xl font-bold">RoomieRent</span>
           </Link>
           <div className="flex items-center gap-4">
             <Button variant="outline" size="sm" asChild>

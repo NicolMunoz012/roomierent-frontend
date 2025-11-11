@@ -11,15 +11,18 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { PasswordStrengthIndicator } from "@/components/ui/password-strength-indicator" // ← NUEVO
+import { PasswordStrengthIndicator } from "@/components/ui/password-strength-indicator"
 import { Home, User, Building2, Eye, EyeOff } from "lucide-react"
+
+// Assuming these are the exact enum values from your Java backend
+type UserRole = "TENANT" | "LANDLORD" 
 
 export default function SignupPage() {
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
-  const [role, setRole] = useState<"ARRENDATARIO" | "PROPIETARIO">("ARRENDATARIO")
+  const [role, setRole] = useState<UserRole>("TENANT") // Initial role set to TENANT
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const { signup } = useAuth()
@@ -34,7 +37,7 @@ export default function SignupPage() {
     e.preventDefault()
     setError("")
 
-    // Validaciones
+    // Validations (Error messages kept in English as user-facing strings were in English previously)
     if (!name.trim()) {
       setError("Name is required")
       return
@@ -68,7 +71,8 @@ export default function SignupPage() {
     setIsLoading(true)
 
     try {
-      const success = await signup(email, password, name, role)
+      // 'role' is passed as "TENANT" or "LANDLORD"
+      const success = await signup(email, password, name, role) 
 
       if (success) {
         router.push("/dashboard")
@@ -85,17 +89,19 @@ export default function SignupPage() {
   return (
     <div className="min-h-screen bg-muted flex items-center justify-center p-4">
       <div className="w-full max-w-md">
+        {/* Logo */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2 mb-4">
             <Home className="h-8 w-8 text-primary" />
-            <span className="font-serif text-3xl font-bold text-foreground">RentSpace</span>
+            <span className="font-serif text-3xl font-bold text-foreground">RoomieRent</span>
           </Link>
         </div>
 
+        {/* Signup Card */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-2xl">Create an account</CardTitle>
-            <CardDescription>Sign up to start finding your perfect home</CardDescription>
+            <CardTitle className="text-2xl">Crear una cuenta</CardTitle>
+            <CardDescription>Regístrate para empezar a encontrar tu hogar perfecto</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -107,7 +113,7 @@ export default function SignupPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="name">
-                  Full Name <span className="text-red-500">*</span>
+                  Nombre Completo <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="name"
@@ -122,7 +128,7 @@ export default function SignupPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="email">
-                  Email <span className="text-red-500">*</span>
+                  Correo Electrónico <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="email"
@@ -137,13 +143,13 @@ export default function SignupPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="password">
-                  Password <span className="text-red-500">*</span>
+                  Contraseña <span className="text-red-500">*</span>
                 </Label>
                 <div className="relative">
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="Create a strong password"
+                    placeholder="Crea una contraseña segura"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
@@ -164,44 +170,46 @@ export default function SignupPage() {
                   </button>
                 </div>
 
-                {/* ← NUEVO: Indicador de fuerza de contraseña */}
+                {/* Password strength indicator */}
                 <PasswordStrengthIndicator password={password} />
               </div>
 
               <div className="space-y-3">
                 <Label>
-                  I want to <span className="text-red-500">*</span>
+                  Quiero <span className="text-red-500">*</span>
                 </Label>
                 <RadioGroup
                   value={role}
-                  onValueChange={(value) => setRole(value as "ARRENDATARIO" | "PROPIETARIO")}
+                  onValueChange={(value) => setRole(value as UserRole)}
                   className="grid grid-cols-2 gap-4"
                   disabled={isLoading}
                 >
                   <div>
-                    <RadioGroupItem value="ARRENDATARIO" id="arrendatario" className="peer sr-only" />
+                    {/* TENANT role value */}
+                    <RadioGroupItem value="TENANT" id="arrendatario" className="peer sr-only" />
                     <Label
                       htmlFor="arrendatario"
                       className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
                     >
                       <User className="mb-3 h-6 w-6" />
-                      <span className="text-sm font-medium">Find a home</span>
+                      <span className="text-sm font-medium">Buscar un hogar</span>
                       <span className="text-xs text-muted-foreground text-center mt-1">
-                        I'm looking to rent
+                        Quiero rentar
                       </span>
                     </Label>
                   </div>
 
                   <div>
-                    <RadioGroupItem value="PROPIETARIO" id="propietario" className="peer sr-only" />
+                    {/* LANDLORD role value */}
+                    <RadioGroupItem value="LANDLORD" id="propietario" className="peer sr-only" />
                     <Label
                       htmlFor="propietario"
                       className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
                     >
                       <Building2 className="mb-3 h-6 w-6" />
-                      <span className="text-sm font-medium">List property</span>
+                      <span className="text-sm font-medium">Publicar una propiedad</span>
                       <span className="text-xs text-muted-foreground text-center mt-1">
-                        I'm a landlord
+                        Soy propietario
                       </span>
                     </Label>
                   </div>
@@ -209,13 +217,13 @@ export default function SignupPage() {
               </div>
 
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Creating account..." : "Sign Up"}
+                {isLoading ? "Creando cuenta..." : "Registrarse"}
               </Button>
 
               <p className="text-center text-sm text-muted-foreground">
-                Already have an account?{" "}
+                ¿Ya tienes una cuenta?{" "}
                 <Link href="/login" className="text-primary hover:underline">
-                  Sign in
+                  Iniciar sesión
                 </Link>
               </p>
             </form>

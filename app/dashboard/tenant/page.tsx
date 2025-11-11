@@ -32,7 +32,7 @@ export default function TenantDashboard() {
             <div className="flex items-center justify-between">
               <Link href="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                 <Home className="h-6 w-6 text-primary" />
-                <span className="font-serif text-2xl font-bold">RentSpace</span>
+                <span className="font-serif text-2xl font-bold">RoomieRent</span>
                 <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">
                   Arrendatario
                 </span>
