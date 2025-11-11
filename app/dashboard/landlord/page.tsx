@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Home, Plus, Building2, BarChart3, MessageSquare, Settings, MapPin, Bed, Bath, Maximize, TrendingUp, Eye } from "lucide-react"
 
-const API_URL = "http://localhost:8080/api/properties"
+const API_URL = `${process.env.NEXT_PUBLIC_API_URL}/api/properties`
 
 interface Property {
   id: number
