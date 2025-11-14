@@ -98,19 +98,24 @@ export default function SignupPage() {
   // CONTROL DE INPUTS
   // ----------------------------
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
+ const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const { name, value } = e.target;
 
-    setFormData((prev) => ({ ...prev, [name]: value }));
+  let finalValue = value;
 
-    // Limpiar error del servidor
-    if (serverError) setServerError("");
+  // Prohibir espacios en contraseña al escribir
+  if (name === "password") {
+    finalValue = value.replace(/\s+/g, "");
+  }
 
-    // Validación en tiempo real solo si había error previo
-    if (errors[name as keyof typeof errors]) {
-      validateField(name, value);
-    }
-  };
+  setFormData((prev) => ({ ...prev, [name]: finalValue }));
+
+  if (serverError) setServerError("");
+
+  if (errors[name as keyof typeof errors]) {
+    validateField(name, finalValue);
+  }
+};
 
   const validateField = (name: string, value: string) => {
     let error = "";
@@ -163,8 +168,8 @@ export default function SignupPage() {
       // Sanitizar
       const sanitized = {
         name: formData.name.trim().replace(/\s+/g, " "),
-        email: formData.email.trim().toLowerCase(),
-        password: formData.password.replace(/\s+/g, ""),
+        email: formData.email.trim().toLowerCase().replace(/\s+/g, ""),
+        password: formData.password.trim().replace(/\s+/g, ""),
         role: formData.role,
       };
 
