@@ -164,7 +164,7 @@ export default function SignupPage() {
       const sanitized = {
         name: formData.name.trim().replace(/\s+/g, " "),
         email: formData.email.trim().toLowerCase(),
-        password: formData.password,
+        password: formData.password.replace(/\s+/g, ""),
         role: formData.role,
       };
 
