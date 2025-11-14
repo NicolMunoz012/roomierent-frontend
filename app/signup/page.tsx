@@ -58,6 +58,8 @@ const validateEmail = (email: string) => {
 const validatePassword = (password: string) => {
   if (!password) return "La contraseña es obligatoria";
 
+  if (/\s/.test(password)) return "La contraseña no puede contener espacios";
+
   if (password.length < 8) return "Debe tener al menos 8 caracteres";
 
   if (!/[A-Z]/.test(password)) return "Debe contener al menos una mayúscula";
