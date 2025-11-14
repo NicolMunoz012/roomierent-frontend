@@ -1,95 +1,212 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
-import { useAuth } from "@/lib/auth-context"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { PasswordStrengthIndicator } from "@/components/ui/password-strength-indicator"
-import { Home, User, Building2, Eye, EyeOff } from "lucide-react"
+import { useState, FormEvent, ChangeEvent } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useAuth } from "@/lib/auth-context";
 
-// Assuming these are the exact enum values from your Java backend
-type UserRole = "TENANT" | "LANDLORD" 
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { PasswordStrengthIndicator } from "@/components/ui/password-strength-indicator";
+
+import { Home, User, Building2, Eye, EyeOff } from "lucide-react";
+
+// Backend enum
+type UserRole = "TENANT" | "LANDLORD";
+
+// ----------------------------
+// VALIDACIONES
+// ----------------------------
+
+// NAME
+const validateName = (name: string) => {
+  const cleaned = name.trim();
+
+  if (!cleaned) return "El nombre es obligatorio";
+
+  if (cleaned.length < 2) return "El nombre debe tener al menos 2 caracteres";
+
+  const nameRegex = /^[A-Za-zÁÉÍÓÚáéíóúñÑ ]+$/;
+  if (!nameRegex.test(cleaned)) {
+    return "El nombre solo puede contener letras y espacios";
+  }
+
+  if (/\s{2,}/.test(cleaned)) {
+    return "No se permiten múltiples espacios seguidos";
+  }
+
+  return "";
+};
+
+// EMAIL
+const validateEmail = (email: string) => {
+  const cleaned = email.trim();
+
+  if (!cleaned) return "El correo es obligatorio";
+
+  const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!regex.test(cleaned)) return "Correo inválido";
+
+  return "";
+};
+
+// PASSWORD
+const validatePassword = (password: string) => {
+  if (!password) return "La contraseña es obligatoria";
+
+  if (password.length < 8) return "Debe tener al menos 8 caracteres";
+
+  if (!/[A-Z]/.test(password)) return "Debe contener al menos una mayúscula";
+
+  if (!/[a-z]/.test(password)) return "Debe contener al menos una minúscula";
+
+  if (!/[0-9]/.test(password)) return "Debe contener un número";
+
+  if (!/[@#$%^&+=!]/.test(password)) return "Debe contener un carácter especial (@#$%^&+=!)";
+
+  return "";
+};
 
 export default function SignupPage() {
-  const [name, setName] = useState("")
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [showPassword, setShowPassword] = useState(false)
-  const [role, setRole] = useState<UserRole>("TENANT") // Initial role set to TENANT
-  const [error, setError] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const { signup } = useAuth()
-  const router = useRouter()
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+    role: "TENANT" as UserRole,
+  });
 
-  const validateEmail = (email: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    return emailRegex.test(email)
-  }
+  const [errors, setErrors] = useState({
+    name: "",
+    email: "",
+    password: "",
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError("")
+  const [serverError, setServerError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-    // Validations (Error messages kept in English as user-facing strings were in English previously)
-    if (!name.trim()) {
-      setError("Name is required")
-      return
+  const router = useRouter();
+  const { signup } = useAuth();
+
+  // ----------------------------
+  // CONTROL DE INPUTS
+  // ----------------------------
+
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+
+    setFormData((prev) => ({ ...prev, [name]: value }));
+
+    // Limpiar error del servidor
+    if (serverError) setServerError("");
+
+    // Validación en tiempo real solo si había error previo
+    if (errors[name as keyof typeof errors]) {
+      validateField(name, value);
+    }
+  };
+
+  const validateField = (name: string, value: string) => {
+    let error = "";
+
+    switch (name) {
+      case "name":
+        error = validateName(value);
+        break;
+      case "email":
+        error = validateEmail(value);
+        break;
+      case "password":
+        error = validatePassword(value);
+        break;
     }
 
-    if (name.trim().length < 2) {
-      setError("Name must be at least 2 characters")
-      return
-    }
+    setErrors((prev) => ({ ...prev, [name]: error || "" }));
+    return !error;
+  };
 
-    if (!email.trim()) {
-      setError("Email is required")
-      return
-    }
+  const handleBlur = (e: any) => {
+    const { name, value } = e.target;
+    validateField(name, value);
+  };
 
-    if (!validateEmail(email)) {
-      setError("Please enter a valid email address")
-      return
-    }
+  // ----------------------------
+  // SUBMIT
+  // ----------------------------
 
-    if (!password) {
-      setError("Password is required")
-      return
-    }
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setServerError("");
 
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters")
-      return
-    }
+    // Validar todos los campos
+    const nameError = validateName(formData.name);
+    const emailError = validateEmail(formData.email);
+    const passError = validatePassword(formData.password);
 
-    setIsLoading(true)
+    setErrors({
+      name: nameError,
+      email: emailError,
+      password: passError,
+    });
+
+    if (nameError || emailError || passError) return;
+
+    setIsLoading(true);
 
     try {
-      // 'role' is passed as "TENANT" or "LANDLORD"
-      const success = await signup(email, password, name, role) 
+      // Sanitizar
+      const sanitized = {
+        name: formData.name.trim().replace(/\s+/g, " "),
+        email: formData.email.trim().toLowerCase(),
+        password: formData.password,
+        role: formData.role,
+      };
+
+      const success = await signup(
+        sanitized.email,
+        sanitized.password,
+        sanitized.name,
+        sanitized.role
+      );
 
       if (success) {
-        router.push("/dashboard")
+        router.push("/dashboard");
       } else {
-        setError("This email is already registered")
+        setServerError("El correo ya está registrado.");
       }
-    } catch (err) {
-      setError("An error occurred. Please try again.")
+    } catch (err: any) {
+      console.log("Signup error:", err);
+
+      // Errores del backend (tu ValidationErrorResponse)
+      if (err.response?.data?.errors) {
+        const backendErrors = err.response.data.errors;
+
+        setErrors((prev) => ({
+          ...prev,
+          ...backendErrors,
+        }));
+      } else if (err.response?.data?.message) {
+        setServerError(err.response.data.message);
+      } else {
+        setServerError("Error inesperado. Intenta nuevamente.");
+      }
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
+
+  // ----------------------------
+  // UI FINAL
+  // ----------------------------
 
   return (
     <div className="min-h-screen bg-muted flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Logo */}
+
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2 mb-4">
             <Home className="h-8 w-8 text-primary" />
@@ -97,139 +214,139 @@ export default function SignupPage() {
           </Link>
         </div>
 
-        {/* Signup Card */}
         <Card>
           <CardHeader>
             <CardTitle className="text-2xl">Crear una cuenta</CardTitle>
-            <CardDescription>Regístrate para empezar a encontrar tu hogar perfecto</CardDescription>
+            <CardDescription>
+              Regístrate para encontrar o publicar propiedades
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
 
-              <div className="space-y-2">
-                <Label htmlFor="name">
-                  Nombre Completo <span className="text-red-500">*</span>
-                </Label>
+          <CardContent>
+
+            {serverError && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertDescription>{serverError}</AlertDescription>
+              </Alert>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+
+              {/* NAME */}
+              <div>
+                <Label htmlFor="name">Nombre Completo</Label>
                 <Input
                   id="name"
-                  type="text"
-                  placeholder="John Doe"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
                   disabled={isLoading}
+                  placeholder="Ej: Juan Pérez"
                 />
+                {errors.name && (
+                  <p className="text-red-600 text-sm mt-1">{errors.name}</p>
+                )}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="email">
-                  Correo Electrónico <span className="text-red-500">*</span>
-                </Label>
+              {/* EMAIL */}
+              <div>
+                <Label htmlFor="email">Correo Electrónico</Label>
                 <Input
                   id="email"
+                  name="email"
                   type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
+                  value={formData.email}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
                   disabled={isLoading}
                 />
+                {errors.email && (
+                  <p className="text-red-600 text-sm mt-1">{errors.email}</p>
+                )}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="password">
-                  Contraseña <span className="text-red-500">*</span>
-                </Label>
+              {/* PASSWORD */}
+              <div>
+                <Label htmlFor="password">Contraseña</Label>
                 <div className="relative">
                   <Input
                     id="password"
+                    name="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="Crea una contraseña segura"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
+                    value={formData.password}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
                     disabled={isLoading}
                     className="pr-10"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    disabled={isLoading}
+                    className="absolute right-3 top-1/2 -translate-y-1/2"
                   >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
+                    {showPassword ? <EyeOff /> : <Eye />}
                   </button>
                 </div>
 
-                {/* Password strength indicator */}
-                <PasswordStrengthIndicator password={password} />
+                <PasswordStrengthIndicator password={formData.password} />
+
+                {errors.password && (
+                  <p className="text-red-600 text-sm mt-1">{errors.password}</p>
+                )}
               </div>
 
-              <div className="space-y-3">
-                <Label>
-                  Quiero <span className="text-red-500">*</span>
-                </Label>
+              {/* ROLE */}
+              <div>
+                <Label>Quiero:</Label>
                 <RadioGroup
-                  value={role}
-                  onValueChange={(value) => setRole(value as UserRole)}
+                  value={formData.role}
+                  onValueChange={(val) =>
+                    setFormData((prev) => ({ ...prev, role: val as UserRole }))
+                  }
                   className="grid grid-cols-2 gap-4"
-                  disabled={isLoading}
                 >
                   <div>
-                    {/* TENANT role value */}
-                    <RadioGroupItem value="TENANT" id="arrendatario" className="peer sr-only" />
+                    <RadioGroupItem value="TENANT" id="tenant" className="sr-only peer" />
                     <Label
-                      htmlFor="arrendatario"
-                      className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                      htmlFor="tenant"
+                      className="cursor-pointer border p-4 rounded-md peer-data-[state=checked]:border-primary"
                     >
-                      <User className="mb-3 h-6 w-6" />
-                      <span className="text-sm font-medium">Buscar un hogar</span>
-                      <span className="text-xs text-muted-foreground text-center mt-1">
-                        Quiero rentar
-                      </span>
+                      <User className="mb-2" />
+                      Buscar un hogar
                     </Label>
                   </div>
 
                   <div>
-                    {/* LANDLORD role value */}
-                    <RadioGroupItem value="LANDLORD" id="propietario" className="peer sr-only" />
+                    <RadioGroupItem value="LANDLORD" id="landlord" className="sr-only peer" />
                     <Label
-                      htmlFor="propietario"
-                      className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                      htmlFor="landlord"
+                      className="cursor-pointer border p-4 rounded-md peer-data-[state=checked]:border-primary"
                     >
-                      <Building2 className="mb-3 h-6 w-6" />
-                      <span className="text-sm font-medium">Publicar una propiedad</span>
-                      <span className="text-xs text-muted-foreground text-center mt-1">
-                        Soy propietario
-                      </span>
+                      <Building2 className="mb-2" />
+                      Publicar propiedad
                     </Label>
                   </div>
                 </RadioGroup>
               </div>
 
+              {/* SUBMIT */}
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? "Creando cuenta..." : "Registrarse"}
               </Button>
 
-              <p className="text-center text-sm text-muted-foreground">
+              <p className="text-center text-sm mt-2">
                 ¿Ya tienes una cuenta?{" "}
-                <Link href="/login" className="text-primary hover:underline">
+                <Link href="/login" className="text-primary underline">
                   Iniciar sesión
                 </Link>
               </p>
             </form>
+
           </CardContent>
         </Card>
+
       </div>
     </div>
-  )
+  );
 }
