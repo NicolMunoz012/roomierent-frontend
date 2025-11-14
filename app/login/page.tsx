@@ -1,196 +1,229 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
-import { useAuth } from "@/lib/auth-context"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Home, Eye, EyeOff, Mail, Lock, ArrowRight } from "lucide-react"
+import { useState, FormEvent } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useAuth } from "@/lib/auth-context";
+import { validators } from "@/lib/validation";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [showPassword, setShowPassword] = useState(false)
-  const [error, setError] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const { login } = useAuth()
-  const router = useRouter()
+  const router = useRouter();
+  const { login } = useAuth();
+  
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
+  
+  const [errors, setErrors] = useState({
+    email: "",
+    password: "",
+  });
+  
+  const [serverError, setServerError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const validateEmail = (email: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    return emailRegex.test(email)
-  }
+  // Validación en tiempo real
+  const validateField = (name: string, value: string) => {
+    let error = "";
+    
+    switch (name) {
+      case "email":
+        error = validators.email(value) || "";
+        break;
+      case "password":
+        if (!value) {
+          error = "La contraseña es obligatoria";
+        }
+        break;
+    }
+    
+    setErrors(prev => ({ ...prev, [name]: error }));
+    return !error;
+  };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError("")
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // Limpiar error del servidor cuando el usuario empieza a escribir
+    if (serverError) setServerError("");
+    
+    // Validar solo si el campo ya tiene un error
+    if (errors[name as keyof typeof errors]) {
+      validateField(name, value);
+    }
+  };
 
-    if (!email.trim()) {
-      setError("El correo electrónico es obligatorio")
-      return
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    validateField(name, value);
+  };
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setServerError("");
+
+    // Validar todos los campos
+    const emailError = validators.email(formData.email);
+    const passwordError = formData.password ? null : "La contraseña es obligatoria";
+
+    setErrors({
+      email: emailError || "",
+      password: passwordError || "",
+    });
+
+    // Si hay errores, no enviar
+    if (emailError || passwordError) {
+      return;
     }
 
-    if (!validateEmail(email)) {
-      setError("Por favor ingresa un correo electrónico válido")
-      return
-    }
-
-    if (!password) {
-      setError("La contraseña es obligatoria")
-      return
-    }
-
-    setIsLoading(true)
+    setIsLoading(true);
 
     try {
-      const success = await login(email, password)
+      // Sanitizar datos antes de enviar
+      const sanitizedData = {
+        email: validators.sanitize(formData.email).toLowerCase(),
+        password: formData.password,
+      };
 
-      if (success) {
-        router.push("/dashboard")
+      await login(sanitizedData.email, sanitizedData.password);
+      router.push("/dashboard");
+    } catch (error: any) {
+      console.error("Error de login:", error);
+      
+      // Manejar diferentes tipos de errores
+      if (error.response?.data?.message) {
+        setServerError(error.response.data.message);
+      } else if (error.message) {
+        setServerError(error.message);
       } else {
-        setError("Correo o contraseña incorrectos")
+        setServerError("Error al iniciar sesión. Por favor, intenta nuevamente.");
       }
-    } catch (err) {
-      setError("Ocurrió un error. Por favor intenta de nuevo.")
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <Link 
-            href="/" 
-            className="inline-flex items-center gap-2 mb-4 hover:opacity-80 transition-opacity group"
-          >
-            <div className="h-12 w-12 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Home className="h-6 w-6 text-white" />
-            </div>
-            <span className="font-serif text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-              RoomieRent
-            </span>
-          </Link>
-          <p className="text-muted-foreground text-sm">
-            Tu hogar perfecto te está esperando
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4">
+      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-lg">
+        <div>
+          <h2 className="text-3xl font-bold text-center text-gray-900">
+            Iniciar Sesión
+          </h2>
+          <p className="mt-2 text-center text-gray-600">
+            Accede a tu cuenta de RoomieRent
           </p>
         </div>
 
-        {/* Card de Login */}
-        <Card className="shadow-xl border-2">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold">Bienvenido de nuevo</CardTitle>
-            <CardDescription>
-              Ingresa a tu cuenta para continuar
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
+        {/* Error del servidor */}
+        {serverError && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+            <p className="text-sm">{serverError}</p>
+          </div>
+        )}
 
-              <div className="space-y-2">
-                <Label htmlFor="email">
-                  Correo Electrónico <span className="text-red-500">*</span>
-                </Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="tu@ejemplo.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    disabled={isLoading}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password">
-                    Contraseña <span className="text-red-500">*</span>
-                  </Label>
-                  <Link
-                    href="/forgot-password"
-                    className="text-sm text-blue-600 hover:text-blue-700 hover:underline"
-                  >
-                    ¿Olvidaste tu contraseña?
-                  </Link>
-                </div>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    disabled={isLoading}
-                    className="pl-10 pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    disabled={isLoading}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              <Button 
-                type="submit" 
-                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md" 
-                size="lg"
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          <div className="space-y-4">
+            {/* Email */}
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                Email
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={formData.email}
+                onChange={handleChange}
+                onBlur={handleBlur}
                 disabled={isLoading}
+                className={`mt-1 block w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed ${
+                  errors.email
+                    ? "border-red-300 focus:border-red-500 focus:ring-red-500"
+                    : "border-gray-300"
+                }`}
+                placeholder="tu@email.com"
+              />
+              {errors.email && (
+                <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+              )}
+            </div>
+
+            {/* Password */}
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                Contraseña
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                required
+                value={formData.password}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                disabled={isLoading}
+                className={`mt-1 block w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed ${
+                  errors.password
+                    ? "border-red-300 focus:border-red-500 focus:ring-red-500"
+                    : "border-gray-300"
+                }`}
+                placeholder="••••••••"
+              />
+              {errors.password && (
+                <p className="mt-1 text-sm text-red-600">{errors.password}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Olvidé mi contraseña */}
+          <div className="flex items-center justify-end">
+            <Link
+              href="/forgot-password"
+              className="text-sm font-medium text-blue-600 hover:text-blue-500"
+            >
+              ¿Olvidaste tu contraseña?
+            </Link>
+          </div>
+
+          {/* Submit button */}
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {isLoading ? (
+              <span className="flex items-center">
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Iniciando sesión...
+              </span>
+            ) : (
+              "Iniciar Sesión"
+            )}
+          </button>
+
+          {/* Link a registro */}
+          <div className="text-center">
+            <p className="text-sm text-gray-600">
+              ¿No tienes una cuenta?{" "}
+              <Link
+                href="/register"
+                className="font-medium text-blue-600 hover:text-blue-500"
               >
-                {isLoading ? (
-                  "Iniciando sesión..."
-                ) : (
-                  <>
-                    Iniciar Sesión
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </>
-                )}
-              </Button>
-
-              <p className="text-center text-sm text-muted-foreground">
-                ¿No tienes una cuenta?{" "}
-                <Link href="/signup" className="text-blue-600 font-medium hover:text-blue-700 hover:underline">
-                  Regístrate aquí
-                </Link>
-              </p>
-            </form>
-          </CardContent>
-        </Card>
-
-        {/* Footer */}
-        <p className="text-center text-sm text-muted-foreground mt-6">
-          Al iniciar sesión, aceptas nuestros{" "}
-          <Link href="/terms" className="underline hover:text-foreground">
-            Términos de Servicio
-          </Link>
-        </p>
+                Regístrate aquí
+              </Link>
+            </p>
+          </div>
+        </form>
       </div>
     </div>
-  )
+  );
 }
