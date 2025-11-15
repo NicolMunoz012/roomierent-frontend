@@ -13,7 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Home, Settings, Save, Sparkles, ArrowLeft, CheckCircle2 } from "lucide-react"
 
-const API_URL = "http://localhost:8080/api"
+const API_URL = `${process.env.NEXT_PUBLIC_API_URL}`
 
 const PROPERTY_TYPES = ["APARTAMENTO", "CASA", "ESTUDIO", "HABITACION"]
 const AMENITIES = [
