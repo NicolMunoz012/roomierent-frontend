@@ -22,7 +22,7 @@ const LocationMap = dynamic(
   { ssr: false }
 )
 
-const API_URL = "http://localhost:8080/api/properties"
+const API_URL = `${process.env.NEXT_PUBLIC_API_URL}/`
 
 const AMENITIES_OPTIONS = [
   { id: "wifi", label: "WiFi" },
