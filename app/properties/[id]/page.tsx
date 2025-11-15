@@ -11,7 +11,7 @@ import { useAuth } from "@/lib/auth-context"
 import { useToast } from "@/hooks/use-toast"
 import { isFavorite, addFavorite, removeFavorite } from "@/lib/favorites"
 
-const API_URL = "http://localhost:8080/api/properties"
+const API_URL = `${process.env.NEXT_PUBLIC_API_URL}/api/property`
 
 interface Property {
   id: number

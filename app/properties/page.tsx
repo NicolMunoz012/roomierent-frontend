@@ -12,7 +12,7 @@ import { Home, Search, MapPin, Bed, Bath, Maximize, Heart, Eye, ArrowLeft } from
 import { useToast } from "@/hooks/use-toast"
 import { addFavorite, removeFavorite, getFavoriteIds } from "@/lib/favorites"
 
-const API_URL = "http://localhost:8080/api/properties"
+const API_URL = `${process.env.NEXT_PUBLIC_API_URL}/api/property`
 
 interface Property {
   id: number

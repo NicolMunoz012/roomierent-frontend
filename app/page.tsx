@@ -37,9 +37,9 @@ export default function HomePage() {
               
               <div className="flex flex-wrap gap-4">
                 <Button 
-                  size="lg" 
-                  asChild 
-                  className="shadow-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                size="lg" 
+                asChild 
+                className="shadow-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 active:scale-95 active:from-blue-800 active:to-indigo-800"
                 >
                   <Link href="/properties">
                     <Search className="mr-2 h-5 w-5" />
