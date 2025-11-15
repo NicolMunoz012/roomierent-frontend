@@ -308,7 +308,7 @@ export default function SignupPage() {
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full h-12 rounded-xl text-lg font-semibold bg-gradient-to-r from-primary to-purple-600 text-white shadow-lg hover:opacity-90 transition"
+                className="w-full h-12 rounded-xl text-base font-medium bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 active:scale-95 active:from-blue-800 active:to-indigo-800 text-white shadow-lg hover:shadow-xl focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               >
                 {isLoading ? "Creando cuenta..." : "Registrarse"}
               </Button>
