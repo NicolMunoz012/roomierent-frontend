@@ -8,70 +8,55 @@ import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { PasswordStrengthIndicator } from "@/components/ui/password-strength-indicator";
 
 import { Home, User, Building2, Eye, EyeOff } from "lucide-react";
 
-// Backend enum
 type UserRole = "TENANT" | "LANDLORD";
 
-// ----------------------------
-// VALIDACIONES
-// ----------------------------
+// VALIDACIONES --------------------
 
-// NAME
 const validateName = (name: string) => {
   const cleaned = name.trim();
-
   if (!cleaned) return "El nombre es obligatorio";
-
   if (cleaned.length < 2) return "El nombre debe tener al menos 2 caracteres";
-
   const nameRegex = /^[A-Za-zÁÉÍÓÚáéíóúñÑ ]+$/;
-  if (!nameRegex.test(cleaned)) {
-    return "El nombre solo puede contener letras y espacios";
-  }
-
-  if (/\s{2,}/.test(cleaned)) {
+  if (!nameRegex.test(cleaned)) return "Solo puede contener letras y espacios";
+  if (/\s{2,}/.test(cleaned))
     return "No se permiten múltiples espacios seguidos";
-  }
-
   return "";
 };
 
-// EMAIL
 const validateEmail = (email: string) => {
   const cleaned = email.trim();
-
   if (!cleaned) return "El correo es obligatorio";
-
   const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!regex.test(cleaned)) return "Correo inválido";
-
   return "";
 };
 
-// PASSWORD
 const validatePassword = (password: string) => {
   if (!password) return "La contraseña es obligatoria";
-
-  if (/\s/.test(password)) return "La contraseña no puede contener espacios";
-
+  if (/\s/.test(password)) return "No puede contener espacios";
   if (password.length < 8) return "Debe tener al menos 8 caracteres";
-
-  if (!/[A-Z]/.test(password)) return "Debe contener al menos una mayúscula";
-
-  if (!/[a-z]/.test(password)) return "Debe contener al menos una minúscula";
-
+  if (!/[A-Z]/.test(password)) return "Debe contener una mayúscula";
+  if (!/[a-z]/.test(password)) return "Debe contener una minúscula";
   if (!/[0-9]/.test(password)) return "Debe contener un número";
-
-  if (!/[@#$%^&+=!]/.test(password)) return "Debe contener un carácter especial (@#$%^&+=!)";
-
+  if (!/[@#$%^&+=!]/.test(password))
+    return "Debe contener un carácter especial (@#$%^&+=!)";
   return "";
 };
+
+// COMPONENTE --------------------
 
 export default function SignupPage() {
   const [formData, setFormData] = useState({
@@ -94,62 +79,35 @@ export default function SignupPage() {
   const router = useRouter();
   const { signup } = useAuth();
 
-  // ----------------------------
-  // CONTROL DE INPUTS
-  // ----------------------------
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
 
- const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-  const { name, value } = e.target;
-
-  let finalValue = value;
-
-  // Prohibir espacios en contraseña al escribir
-  if (name === "password") {
-    finalValue = value.replace(/\s+/g, "");
-  }
-
-  setFormData((prev) => ({ ...prev, [name]: finalValue }));
-
-  if (serverError) setServerError("");
-
-  if (errors[name as keyof typeof errors]) {
-    validateField(name, finalValue);
-  }
-};
-
-  const validateField = (name: string, value: string) => {
-    let error = "";
-
-    switch (name) {
-      case "name":
-        error = validateName(value);
-        break;
-      case "email":
-        error = validateEmail(value);
-        break;
-      case "password":
-        error = validatePassword(value);
-        break;
+    let finalValue = value;
+    if (name === "password") {
+      finalValue = value.replace(/\s+/g, "");
     }
 
-    setErrors((prev) => ({ ...prev, [name]: error || "" }));
-    return !error;
+    setFormData((prev) => ({ ...prev, [name]: finalValue }));
+
+    if (serverError) setServerError("");
+    if (errors[name as keyof typeof errors]) {
+      validateField(name, finalValue);
+    }
   };
 
-  const handleBlur = (e: any) => {
-    const { name, value } = e.target;
-    validateField(name, value);
+  const validateField = (name: string, value: string) => {
+    let err = "";
+    if (name === "name") err = validateName(value);
+    if (name === "email") err = validateEmail(value);
+    if (name === "password") err = validatePassword(value);
+    setErrors((p) => ({ ...p, [name]: err || "" }));
+    return !err;
   };
-
-  // ----------------------------
-  // SUBMIT
-  // ----------------------------
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setServerError("");
 
-    // Validar todos los campos
     const nameError = validateName(formData.name);
     const emailError = validateEmail(formData.email);
     const passError = validatePassword(formData.password);
@@ -165,7 +123,6 @@ export default function SignupPage() {
     setIsLoading(true);
 
     try {
-      // Sanitizar
       const sanitized = {
         name: formData.name.trim().replace(/\s+/g, " "),
         email: formData.email.trim().toLowerCase().replace(/\s+/g, ""),
@@ -180,22 +137,11 @@ export default function SignupPage() {
         sanitized.role
       );
 
-      if (success) {
-        router.push("/dashboard");
-      } else {
-        setServerError("El correo ya está registrado.");
-      }
+      if (success) router.push("/dashboard");
+      else setServerError("El correo ya está registrado.");
     } catch (err: any) {
-      console.log("Signup error:", err);
-
-      // Errores del backend (tu ValidationErrorResponse)
       if (err.response?.data?.errors) {
-        const backendErrors = err.response.data.errors;
-
-        setErrors((prev) => ({
-          ...prev,
-          ...backendErrors,
-        }));
+        setErrors((p) => ({ ...p, ...err.response.data.errors }));
       } else if (err.response?.data?.message) {
         setServerError(err.response.data.message);
       } else {
@@ -206,75 +152,85 @@ export default function SignupPage() {
     }
   };
 
-  // ----------------------------
-  // UI FINAL
-  // ----------------------------
+  // UI --------------------
 
   return (
-    <div className="min-h-screen bg-muted flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-100 flex items-center justify-center p-6">
+      <div className="w-full max-w-lg">
 
+        {/* HEADER LOGO */}
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2 mb-4">
-            <Home className="h-8 w-8 text-primary" />
-            <span className="font-serif text-3xl font-bold text-foreground">RoomieRent</span>
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 hover:opacity-80 transition"
+          >
+            <Home className="h-10 w-10 text-primary" />
+            <span className="font-serif text-4xl font-extrabold tracking-tight text-gray-900">
+              RoomieRent
+            </span>
           </Link>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl">Crear una cuenta</CardTitle>
-            <CardDescription>
+        <Card className="shadow-2xl border-none rounded-2xl bg-white/90 backdrop-blur-xl">
+          <CardHeader className="text-center space-y-1">
+            <CardTitle className="text-3xl font-bold text-gray-900">
+              Crear una cuenta
+            </CardTitle>
+            <CardDescription className="text-base">
               Regístrate para encontrar o publicar propiedades
             </CardDescription>
           </CardHeader>
 
-          <CardContent>
+          <CardContent className="space-y-6">
 
             {serverError && (
-              <Alert variant="destructive" className="mb-4">
+              <Alert variant="destructive">
                 <AlertDescription>{serverError}</AlertDescription>
               </Alert>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-6">
 
               {/* NAME */}
-              <div>
-                <Label htmlFor="name">Nombre Completo</Label>
+              <div className="space-y-1">
+                <Label htmlFor="name" className="font-medium">
+                  Nombre completo
+                </Label>
                 <Input
                   id="name"
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
-                  onBlur={handleBlur}
+                  onBlur={(e) => validateField("name", e.target.value)}
                   disabled={isLoading}
+                  className="h-12 rounded-xl text-base"
                   placeholder="Ej: Juan Pérez"
                 />
                 {errors.name && (
-                  <p className="text-red-600 text-sm mt-1">{errors.name}</p>
+                  <p className="text-red-600 text-sm">{errors.name}</p>
                 )}
               </div>
 
               {/* EMAIL */}
-              <div>
-                <Label htmlFor="email">Correo Electrónico</Label>
+              <div className="space-y-1">
+                <Label htmlFor="email">Correo electrónico</Label>
                 <Input
                   id="email"
                   name="email"
                   type="email"
                   value={formData.email}
                   onChange={handleChange}
-                  onBlur={handleBlur}
+                  onBlur={(e) => validateField("email", e.target.value)}
                   disabled={isLoading}
+                  className="h-12 rounded-xl text-base"
                 />
                 {errors.email && (
-                  <p className="text-red-600 text-sm mt-1">{errors.email}</p>
+                  <p className="text-red-600 text-sm">{errors.email}</p>
                 )}
               </div>
 
               {/* PASSWORD */}
-              <div>
+              <div className="space-y-1">
                 <Label htmlFor="password">Contraseña</Label>
                 <div className="relative">
                   <Input
@@ -283,14 +239,14 @@ export default function SignupPage() {
                     type={showPassword ? "text" : "password"}
                     value={formData.password}
                     onChange={handleChange}
-                    onBlur={handleBlur}
+                    onBlur={(e) => validateField("password", e.target.value)}
                     disabled={isLoading}
-                    className="pr-10"
+                    className="h-12 pr-12 rounded-xl text-base"
                   />
                   <button
                     type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 opacity-80 hover:opacity-100 transition"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2"
                   >
                     {showPassword ? <EyeOff /> : <Eye />}
                   </button>
@@ -299,36 +255,47 @@ export default function SignupPage() {
                 <PasswordStrengthIndicator password={formData.password} />
 
                 {errors.password && (
-                  <p className="text-red-600 text-sm mt-1">{errors.password}</p>
+                  <p className="text-red-600 text-sm">{errors.password}</p>
                 )}
               </div>
 
               {/* ROLE */}
-              <div>
-                <Label>Quiero:</Label>
+              <div className="space-y-2">
+                <Label className="font-medium">Quiero:</Label>
+
                 <RadioGroup
                   value={formData.role}
-                  onValueChange={(val) =>
-                    setFormData((prev) => ({ ...prev, role: val as UserRole }))
+                  onValueChange={(v) =>
+                    setFormData((p) => ({ ...p, role: v as UserRole }))
                   }
-                  className="grid grid-cols-2 gap-4"
+                  className="grid grid-cols-2 gap-3"
                 >
-                  <div>
-                    <RadioGroupItem value="TENANT" id="tenant" className="sr-only peer" />
+                  {/* TENANT */}
+                  <div className="relative">
+                    <RadioGroupItem
+                      value="TENANT"
+                      id="tenant"
+                      className="sr-only peer"
+                    />
                     <Label
                       htmlFor="tenant"
-                      className="cursor-pointer border p-4 rounded-md peer-data-[state=checked]:border-primary"
+                      className="flex flex-col items-center border rounded-xl p-4 cursor-pointer bg-white shadow-sm peer-data-[state=checked]:border-primary peer-data-[state=checked]:shadow-md hover:bg-gray-50 transition"
                     >
                       <User className="mb-2" />
-                      Buscar un hogar
+                      Buscar hogar
                     </Label>
                   </div>
 
-                  <div>
-                    <RadioGroupItem value="LANDLORD" id="landlord" className="sr-only peer" />
+                  {/* LANDLORD */}
+                  <div className="relative">
+                    <RadioGroupItem
+                      value="LANDLORD"
+                      id="landlord"
+                      className="sr-only peer"
+                    />
                     <Label
                       htmlFor="landlord"
-                      className="cursor-pointer border p-4 rounded-md peer-data-[state=checked]:border-primary"
+                      className="flex flex-col items-center border rounded-xl p-4 cursor-pointer bg-white shadow-sm peer-data-[state=checked]:border-primary peer-data-[state=checked]:shadow-md hover:bg-gray-50 transition"
                     >
                       <Building2 className="mb-2" />
                       Publicar propiedad
@@ -338,21 +305,26 @@ export default function SignupPage() {
               </div>
 
               {/* SUBMIT */}
-              <Button type="submit" className="w-full" disabled={isLoading}>
+              <Button
+                type="submit"
+                disabled={isLoading}
+                className="w-full h-12 rounded-xl text-lg font-semibold bg-gradient-to-r from-primary to-purple-600 text-white shadow-lg hover:opacity-90 transition"
+              >
                 {isLoading ? "Creando cuenta..." : "Registrarse"}
               </Button>
 
-              <p className="text-center text-sm mt-2">
+              <p className="text-center text-sm text-gray-600">
                 ¿Ya tienes una cuenta?{" "}
-                <Link href="/login" className="text-primary underline">
+                <Link
+                  href="/login"
+                  className="text-primary font-medium underline hover:opacity-80"
+                >
                   Iniciar sesión
                 </Link>
               </p>
             </form>
-
           </CardContent>
         </Card>
-
       </div>
     </div>
   );
