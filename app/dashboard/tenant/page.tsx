@@ -10,18 +10,41 @@ import { Button } from "@/components/ui/button"
 import { Home, Search, Heart, MapPin, Sparkles, MessageSquare, User, TrendingUp, Settings } from "lucide-react"
 
 export default function TenantDashboard() {
-  const { user, logout } = useAuth()
+  const { user, token, logout } = useAuth()
   const router = useRouter()
   const [savedProperties, setSavedProperties] = useState<any[]>([])
   const [viewedProperties, setViewedProperties] = useState(0)
 
-  useEffect(() => {
-    if (user) {
-      // Por ahora dejamos esto vacío, luego integraremos con el backend real
-      setSavedProperties([])
-      setViewedProperties(0)
+ useEffect(() => {
+   if (!token) return;
+
+  const fetchFavorites = async () => {
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/favorites/ids`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!res.ok) {
+        console.error("Error obteniendo favoritos:", res.status);
+        return;
+      }
+
+      const ids = await res.json();
+      setSavedProperties(ids || []);
+    } catch (error) {
+      console.error("Error:", error);
     }
-  }, [user])
+  };
+
+  fetchFavorites();
+}, [token]);
 
   return (
     <RoleGuard allowedRoles={["TENANT"]}>

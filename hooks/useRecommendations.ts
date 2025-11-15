@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { PropertyResponse } from '@/lib/types/recommendations';
+import { useAuth } from '@/lib/auth-context';  
 import { getRecommendations, getSimilarProperties } from '@/lib/api/recommendations';
 import { useRouter } from 'next/navigation';
 
@@ -10,6 +11,7 @@ export function useRecommendations(limit: number = 10) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const { token, isAuthenticated } = useAuth();  // ← AGREGADO
 
   const fetchRecommendations = useCallback(async () => {
     setIsLoading(true);
@@ -33,16 +35,14 @@ export function useRecommendations(limit: number = 10) {
   }, [limit, router]);
 
   useEffect(() => {
-    // Verificar token antes de cargar
-    const token = localStorage.getItem('token');
-    if (!token) {
+    // Verificar autenticación usando el contexto
+    if (!isAuthenticated || !token) {  // ← CAMBIADO
       router.push('/login');
       return;
     }
 
     fetchRecommendations();
-  }, [fetchRecommendations, router]);
-
+  }, [fetchRecommendations, router, isAuthenticated, token]);  
   return {
     properties,
     isLoading,

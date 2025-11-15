@@ -1,7 +1,12 @@
+// lib/auth-context.tsx
 "use client"
 
 import type React from "react"
-import { createContext, useContext, useState, useEffect } from "react"
+import { createContext, useContext, useState, useEffect, useCallback } from "react"
+
+// ==========================================
+// INTERFACES
+// ==========================================
 
 interface User {
   id: number
@@ -12,31 +17,65 @@ interface User {
 
 interface AuthContextType {
   user: User | null
+  token: string | null  // ← AGREGADO
   login: (email: string, password: string) => Promise<boolean>
   signup: (email: string, password: string, name: string, role: string) => Promise<boolean>
   logout: () => void
   isLoading: boolean
+  isAuthenticated: boolean  // ← AGREGADO (útil para guards)
 }
+
+// ==========================================
+// CONTEXTO
+// ==========================================
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 const API_URL = `${process.env.NEXT_PUBLIC_API_URL}/auth`
 
+// ==========================================
+// PROVIDER
+// ==========================================
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
+  const [token, setToken] = useState<string | null>(null)  // ← AGREGADO
   const [isLoading, setIsLoading] = useState(true)
 
-  useEffect(() => {
-    const storedUser = localStorage.getItem("rental_user")
-    const storedToken = localStorage.getItem("rental_token")
+  // ==========================================
+  // CARGAR DATOS AL INICIAR
+  // ==========================================
 
-    if (storedUser && storedToken) {
-      setUser(JSON.parse(storedUser))
+  useEffect(() => {
+    // Solo ejecutar en el cliente
+    if (typeof window === "undefined") {
+      setIsLoading(false)
+      return
     }
-    setIsLoading(false)
+
+    try {
+      const storedUser = localStorage.getItem("rental_user")
+      const storedToken = localStorage.getItem("rental_token")
+
+      if (storedUser && storedToken) {
+        setUser(JSON.parse(storedUser))
+        setToken(storedToken)  // ← AGREGADO
+      }
+    } catch (error) {
+      console.error("Error loading auth data:", error)
+      // Limpiar datos corruptos
+      localStorage.removeItem("rental_user")
+      localStorage.removeItem("rental_token")
+    } finally {
+      setIsLoading(false)
+    }
   }, [])
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  // ==========================================
+  // LOGIN
+  // ==========================================
+
+  const login = useCallback(async (email: string, password: string): Promise<boolean> => {
     try {
       const response = await fetch(`${API_URL}/login`, {
         method: "POST",
@@ -52,14 +91,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const data = await response.json()
 
-      const userData = {
+      const userData: User = {
         id: data.id,
         email: data.email,
         name: data.name,
         role: data.role,
       }
 
+      // Actualizar estado
       setUser(userData)
+      setToken(data.token)  // ← AGREGADO
+
+      // Guardar en localStorage
       localStorage.setItem("rental_user", JSON.stringify(userData))
       localStorage.setItem("rental_token", data.token)
 
@@ -68,9 +111,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error("Error en login:", error)
       return false
     }
-  }
+  }, [])
 
-  const signup = async (
+  // ==========================================
+  // SIGNUP
+  // ==========================================
+
+  const signup = useCallback(async (
     email: string,
     password: string,
     name: string,
@@ -103,14 +150,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (response.status === 201 && data.token) {
         console.log("✅ Signup exitoso:", data)
 
-        const userData = {
+        const userData: User = {
           id: data.id,
           email: data.email,
           name: data.name,
           role: data.role,
         }
 
+        // Actualizar estado
         setUser(userData)
+        setToken(data.token)  // ← AGREGADO
+
+        // Guardar en localStorage
         localStorage.setItem("rental_user", JSON.stringify(userData))
         localStorage.setItem("rental_token", data.token)
 
@@ -124,20 +175,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error("❌ Error en signup:", error)
       return false
     }
-  }
+  }, [])
 
-  const logout = () => {
+  // ==========================================
+  // LOGOUT
+  // ==========================================
+
+  const logout = useCallback(() => {
+    // Limpiar estado
     setUser(null)
+    setToken(null)  // ← AGREGADO
+
+    // Limpiar localStorage
     localStorage.removeItem("rental_user")
     localStorage.removeItem("rental_token")
+  }, [])
+
+  // ==========================================
+  // VALOR DEL CONTEXTO
+  // ==========================================
+
+  const value: AuthContextType = {
+    user,
+    token,  // ← AGREGADO
+    login,
+    signup,
+    logout,
+    isLoading,
+    isAuthenticated: !!user && !!token,  // ← AGREGADO
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, signup, logout, isLoading }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   )
 }
+
+// ==========================================
+// HOOK PERSONALIZADO
+// ==========================================
 
 export function useAuth() {
   const context = useContext(AuthContext)
@@ -145,4 +222,21 @@ export function useAuth() {
     throw new Error("useAuth must be used within an AuthProvider")
   }
   return context
+}
+
+// ==========================================
+// HELPER: Obtener Headers de Autorización
+// ==========================================
+
+export function getAuthHeaders(token?: string | null): HeadersInit {
+  const authToken = token || localStorage.getItem("rental_token")
+
+  if (!authToken) {
+    throw new Error("No authentication token found")
+  }
+
+  return {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${authToken}`,
+  }
 }
