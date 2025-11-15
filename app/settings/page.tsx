@@ -22,7 +22,7 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Home, User, Mail, Shield, Trash2, AlertCircle, ArrowLeft, Building2 } from "lucide-react"
 
-const API_URL = `${process.env.NEXT_PUBLIC_API_URL}/api/settings`
+const API_URL = `${process.env.NEXT_PUBLIC_API_URL}/settings`
 export default function SettingsPage() {
   const router = useRouter()
   const { user, logout } = useAuth()
