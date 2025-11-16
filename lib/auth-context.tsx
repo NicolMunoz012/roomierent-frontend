@@ -4,10 +4,6 @@
 import type React from "react"
 import { createContext, useContext, useState, useEffect, useCallback } from "react"
 
-// ==========================================
-// INTERFACES
-// ==========================================
-
 interface User {
   id: number
   email: string
@@ -25,17 +21,9 @@ interface AuthContextType {
   isAuthenticated: boolean  // ← AGREGADO (útil para guards)
 }
 
-// ==========================================
-// CONTEXTO
-// ==========================================
-
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 const API_URL = `${process.env.NEXT_PUBLIC_API_URL}/auth`
-
-// ==========================================
-// PROVIDER
-// ==========================================
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
