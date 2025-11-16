@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Home, ArrowLeft, Mail, CheckCircle } from "lucide-react"
 
-const API_URL = `${process.env.NEXT_PUBLIC_API_URL}/forgot-password`
+const API_URL = `${process.env.NEXT_PUBLIC_API_URL}/auth/forgot-password`
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("")
@@ -41,7 +41,7 @@ export default function ForgotPasswordPage() {
     setIsLoading(true)
 
     try {
-      const response = await fetch(`${API_URL}/forgot-password`, {
+      const response = await fetch(API_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
