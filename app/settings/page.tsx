@@ -59,10 +59,14 @@ export default function SettingsPage() {
     }
   }
 
+useEffect(() => {
   if (!user) {
     router.push("/login")
-    return null
   }
+}, [user])
+
+if (!user) return null
+
 
   const handleDeleteAccount = async () => {
     if (confirmText !== "ELIMINAR") {

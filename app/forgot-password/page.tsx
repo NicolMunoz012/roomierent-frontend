@@ -71,7 +71,7 @@ export default function ForgotPasswordPage() {
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2 mb-4 hover:opacity-80 transition-opacity">
             <Home className="h-8 w-8 text-primary" />
-            <span className="font-serif text-3xl font-bold text-foreground">RentSpace</span>
+            <span className="font-serif text-3xl font-bold text-foreground">RoomieRent</span>
           </Link>
         </div>
 
