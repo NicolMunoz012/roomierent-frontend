@@ -78,28 +78,21 @@ export default function LoginPage() {
 
     setIsLoading(true);
 
-    try {
-      const sanitizedData = {
-        email: validators.sanitize(formData.email).toLowerCase(),
-        password: formData.password,
-      };
+    const sanitizedData = {
+      email: validators.sanitize(formData.email).toLowerCase(),
+      password: formData.password,
+    };
 
-      await login(sanitizedData.email, sanitizedData.password);
+    // ← CAMBIO AQUÍ: Ahora manejamos el resultado como objeto
+    const result = await login(sanitizedData.email, sanitizedData.password);
+
+    setIsLoading(false);
+
+    if (result.success) {
       router.push("/dashboard");
-    } catch (error: any) {
-      console.error("Error de login:", error);
-
-      if (error.response?.status === 401) {
-        setServerError("Credenciales incorrectas. Por favor, verifica tu correo y contraseña e intenta de nuevo.");
-      } else if (error.response?.data?.message) {
-        setServerError(error.response.data.message);
-      } else if (error.message) {
-        setServerError(error.message);
-      } else {
-        setServerError("Error al iniciar sesión. Por favor, intenta nuevamente.");
-      }
-    } finally {
-      setIsLoading(false);
+    } else {
+      // Mostrar el mensaje de error del servidor
+      setServerError(result.message || "Error al iniciar sesión. Por favor, intenta nuevamente.");
     }
   };
 

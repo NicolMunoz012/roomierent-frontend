@@ -13,12 +13,12 @@ interface User {
 
 interface AuthContextType {
   user: User | null
-  token: string | null  // ← AGREGADO
-  login: (email: string, password: string) => Promise<boolean>
+  token: string | null
+  login: (email: string, password: string) => Promise<{success: boolean, message?: string}>  // ← CAMBIO AQUÍ
   signup: (email: string, password: string, name: string, role: string) => Promise<boolean>
   logout: () => void
   isLoading: boolean
-  isAuthenticated: boolean  // ← AGREGADO (útil para guards)
+  isAuthenticated: boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -27,7 +27,7 @@ const API_URL = `${process.env.NEXT_PUBLIC_API_URL}/auth`
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
-  const [token, setToken] = useState<string | null>(null)  // ← AGREGADO
+  const [token, setToken] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   // ==========================================
@@ -47,7 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (storedUser && storedToken) {
         setUser(JSON.parse(storedUser))
-        setToken(storedToken)  // ← AGREGADO
+        setToken(storedToken)
       }
     } catch (error) {
       console.error("Error loading auth data:", error)
@@ -152,7 +152,7 @@ const login = useCallback(async (email: string, password: string): Promise<any> 
 
         // Actualizar estado
         setUser(userData)
-        setToken(data.token)  // ← AGREGADO
+        setToken(data.token)
 
         // Guardar en localStorage
         localStorage.setItem("rental_user", JSON.stringify(userData))
@@ -177,7 +177,7 @@ const login = useCallback(async (email: string, password: string): Promise<any> 
   const logout = useCallback(() => {
     // Limpiar estado
     setUser(null)
-    setToken(null)  // ← AGREGADO
+    setToken(null)
 
     // Limpiar localStorage
     localStorage.removeItem("rental_user")
@@ -190,12 +190,12 @@ const login = useCallback(async (email: string, password: string): Promise<any> 
 
   const value: AuthContextType = {
     user,
-    token,  // ← AGREGADO
+    token,
     login,
     signup,
     logout,
     isLoading,
-    isAuthenticated: !!user && !!token,  // ← AGREGADO
+    isAuthenticated: !!user && !!token,
   }
 
   return (
