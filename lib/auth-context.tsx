@@ -63,44 +63,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // LOGIN
   // ==========================================
 
-  const login = useCallback(async (email: string, password: string): Promise<boolean> => {
-    try {
-      const response = await fetch(`${API_URL}/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      })
+const login = useCallback(async (email: string, password: string): Promise<any> => {
+  try {
+    const response = await fetch(`${API_URL}/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email, password }),
+    });
 
-      if (!response.ok) {
-        return false
-      }
+    const data = await response.json();
 
-      const data = await response.json()
-
-      const userData: User = {
-        id: data.id,
-        email: data.email,
-        name: data.name,
-        role: data.role,
-      }
-
-      // Actualizar estado
-      setUser(userData)
-      setToken(data.token)  // ← AGREGADO
-
-      // Guardar en localStorage
-      localStorage.setItem("rental_user", JSON.stringify(userData))
-      localStorage.setItem("rental_token", data.token)
-
-      return true
-    } catch (error) {
-      console.error("Error en login:", error)
-      return false
+    // Si falla el login, devolver mensaje legible
+    if (!response.ok) {
+      return {
+        success: false,
+        message: data.message || "Credenciales incorrectas",
+      };
     }
-  }, [])
 
+    const userData: User = {
+      id: data.id,
+      email: data.email,
+      name: data.name,
+      role: data.role,
+    };
+
+    setUser(userData);
+    setToken(data.token);
+
+    localStorage.setItem("rental_user", JSON.stringify(userData));
+    localStorage.setItem("rental_token", data.token);
+
+    return { success: true };
+
+  } catch (error) {
+    console.error("Error en login:", error);
+    return {
+      success: false,
+      message: "No se pudo conectar con el servidor",
+    };
+  }
+}, []);
   // ==========================================
   // SIGNUP
   // ==========================================
