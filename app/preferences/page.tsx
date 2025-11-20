@@ -72,6 +72,12 @@ export default function PreferencesPage() {
 
       console.log("📥 Status:", response.status)
 
+      if (response.status === 204) {
+      console.log("ℹ️ Usuario sin preferencias guardadas")
+      setIsLoading(false)
+      return
+    }
+
       if (response.ok) {
         const data = await response.json()
         
@@ -89,7 +95,7 @@ export default function PreferencesPage() {
       } else if (response.status === 204) {
         console.log("ℹ️ Usuario sin preferencias guardadas")
       } else {
-        console.error("Error cargando preferencias:", response.status)
+        console.error(`Error cargando preferencias:${response.status}`)
       }
     } catch (error) {
       console.error("Error cargando preferencias:", error)

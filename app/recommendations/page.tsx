@@ -29,21 +29,23 @@ interface Property {
 
 export default function RecommendationsPage() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const [recommendations, setRecommendations] = useState<Property[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState("")
   const [hasPreferences, setHasPreferences] = useState(false)
 
   useEffect(() => {
-    if (!user) {
+    if (!user || !token) {
       router.push("/login")
       return
     }
     loadRecommendations()
-  }, [user])
+  }, [user, token])
 
   const loadRecommendations = async () => {
+    if (!token) return
+
     setIsLoading(true)
     setError("")
 
@@ -51,7 +53,7 @@ export default function RecommendationsPage() {
       // Primero verificar si tiene preferencias
       const prefsResponse = await fetch(`${API_URL}/recommendations/preferences`, {
         headers: {
-          "Authorization": user?.email || "",
+          "Authorization": `Bearer ${token}`,
         },
       })
 
@@ -66,9 +68,11 @@ export default function RecommendationsPage() {
       // Obtener recomendaciones
       const response = await fetch(`${API_URL}/recommendations?limit=12`, {
         headers: {
-          "Authorization": user?.email || "",
+          "Authorization": `Bearer ${token}`,
         },
       })
+
+      console.log("📥 Status recomendaciones:", response.status)
 
       if (response.ok) {
         const data = await response.json()
