@@ -49,7 +49,7 @@ export default function RecommendationsPage() {
 
     try {
       // Primero verificar si tiene preferencias
-      const prefsResponse = await fetch(`${API_URL}/api/recommendations/preferences`, {
+      const prefsResponse = await fetch(`${API_URL}/recommendations/preferences`, {
         headers: {
           "Authorization": user?.email || "",
         },
@@ -64,7 +64,7 @@ export default function RecommendationsPage() {
       setHasPreferences(true)
 
       // Obtener recomendaciones
-      const response = await fetch(`${API_URL}/api/recommendations?limit=12`, {
+      const response = await fetch(`${API_URL}/recommendations?limit=12`, {
         headers: {
           "Authorization": user?.email || "",
         },
