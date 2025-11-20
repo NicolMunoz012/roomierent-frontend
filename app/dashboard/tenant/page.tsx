@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { RoleGuard } from "@/lib/role-guard"
-import { useAuth } from "@/lib/auth-context"
+import { useAuth, getAuthHeaders } from "@/lib/auth-context"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Home, Search, Heart, MapPin, Sparkles, MessageSquare, User, TrendingUp, Settings } from "lucide-react"
@@ -14,6 +14,7 @@ export default function TenantDashboard() {
   const router = useRouter()
   const [savedProperties, setSavedProperties] = useState<any[]>([])
   const [viewedProperties, setViewedProperties] = useState(0)
+  const [favoritesError, setFavoritesError] = useState<string | null>(null)
 
  useEffect(() => {
    if (!token) return;
@@ -24,22 +25,25 @@ export default function TenantDashboard() {
         `${process.env.NEXT_PUBLIC_API_URL}/favorites/ids`,
         {
           method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
+          headers: getAuthHeaders(token),
         }
       );
 
+      if (res.status === 401) {
+        router.push("/login");
+        return;
+      }
+
       if (!res.ok) {
-        console.error("Error obteniendo favoritos:", res.status);
+        setFavoritesError("No pudimos obtener tus favoritos. Intenta nuevamente.");
         return;
       }
 
       const ids = await res.json();
       setSavedProperties(ids || []);
+      setFavoritesError(null);
     } catch (error) {
-      console.error("Error:", error);
+      setFavoritesError("Ocurrió un error al conectar con el servidor.");
     }
   };
 
@@ -80,6 +84,11 @@ export default function TenantDashboard() {
 
         {/* Main Content */}
         <main className="container mx-auto px-4 py-8">
+          {favoritesError && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+              <p className="text-sm">{favoritesError}</p>
+            </div>
+          )}
           {/* Hero Section */}
           <div className="mb-8">
             <h1 className="font-serif text-4xl md:text-5xl font-bold mb-3 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">

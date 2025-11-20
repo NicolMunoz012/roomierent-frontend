@@ -1,25 +1,15 @@
 // lib/api/recommendations.ts
 
 import { PropertyResponse, UserPreferencesResponse, UserPreferencesRequest } from "@/lib/types/recommendations";
+import { getAuthHeaders } from "@/lib/auth-context";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://roomierent-backend-production-a2c7.up.railway.app/api';
-
-function getAuthHeader(): HeadersInit {
-  const token = localStorage.getItem('token');
-  if (!token) {
-    throw new Error('No authentication token found');
-  }
-  return {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json',
-  };
-}
 
 export async function getRecommendations(limit: number = 10): Promise<PropertyResponse[]> {
   const response = await fetch(
     `${API_BASE_URL}/recommendations?limit=${limit}`,
     {
-      headers: getAuthHeader(),
+      headers: getAuthHeaders(),
     }
   );
 
@@ -37,7 +27,7 @@ export async function getSimilarProperties(propertyId: number): Promise<Property
   const response = await fetch(
     `${API_BASE_URL}/recommendations/similar/${propertyId}`,
     {
-      headers: getAuthHeader(),
+      headers: getAuthHeaders(),
     }
   );
 
@@ -52,7 +42,7 @@ export async function getUserPreferences(): Promise<UserPreferencesResponse> {
   const response = await fetch(
     `${API_BASE_URL}/recommendations/preferences`,
     {
-      headers: getAuthHeader(),
+      headers: getAuthHeaders(),
     }
   );
 
@@ -70,7 +60,7 @@ export async function saveUserPreferences(
     `${API_BASE_URL}/recommendations/preferences`,
     {
       method: 'POST',
-      headers: getAuthHeader(),
+      headers: getAuthHeaders(),
       body: JSON.stringify(preferences),
     }
   );
@@ -87,7 +77,7 @@ export async function buildGraph(): Promise<void> {
     `${API_BASE_URL}/recommendations/build-graph`,
     {
       method: 'POST',
-      headers: getAuthHeader(),
+      headers: getAuthHeaders(),
     }
   );
 
