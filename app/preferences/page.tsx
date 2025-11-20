@@ -6,9 +6,8 @@ import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
 import { Home, Settings, Save, Sparkles, ArrowLeft, CheckCircle2, AlertCircle } from "lucide-react"
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL  // Sin barra al final
+const API_URL = process.env.NEXT_PUBLIC_API_URL
 
-// Mapeo de tipos: Frontend (español) -> Backend (inglés)
 const PROPERTY_TYPES = [
   { value: "APARTMENT", label: "Apartamento" },
   { value: "HOUSE", label: "Casa" },
@@ -29,7 +28,7 @@ const AMENITIES = [
 
 export default function PreferencesPage() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -47,25 +46,31 @@ export default function PreferencesPage() {
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([])
 
   useEffect(() => {
-    if (!user) {
+    if (!user || !token) {
       router.push("/login")
       return
     }
     loadPreferences()
-  }, [user])
+  }, [user, token])
 
   const loadPreferences = async () => {
+    if (!token) return
+    
     setIsLoading(true)
     setError("")
     
     try {
-      const response = await fetch(`${API_URL}/recommendations/preferences`, {
+      console.log("📤 Cargando preferencias...")
+      
+      const response = await fetch(`${API_URL}/api/recommendations/preferences`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": user?.email || "",
+          "Authorization": `Bearer ${token}`,
         },
       })
+
+      console.log("📥 Status:", response.status)
 
       if (response.ok) {
         const data = await response.json()
@@ -95,13 +100,36 @@ export default function PreferencesPage() {
   }
 
   const handleSave = async () => {
+    if (!token) {
+      setError("No estás autenticado. Por favor inicia sesión nuevamente.")
+      return
+    }
+
     setIsSaving(true)
     setError("")
     setSuccess(false)
 
-    // Validaciones básicas
+    // Validaciones
     if (minPrice && maxPrice && parseFloat(minPrice) > parseFloat(maxPrice)) {
       setError("El precio mínimo no puede ser mayor al máximo")
+      setIsSaving(false)
+      return
+    }
+
+    if (minPrice && parseFloat(minPrice) < 0) {
+      setError("El precio mínimo no puede ser negativo")
+      setIsSaving(false)
+      return
+    }
+
+    if (maxPrice && parseFloat(maxPrice) < 0) {
+      setError("El precio máximo no puede ser negativo")
+      setIsSaving(false)
+      return
+    }
+
+    if (minArea && parseFloat(minArea) < 0) {
+      setError("El área no puede ser negativa")
       setIsSaving(false)
       return
     }
@@ -113,7 +141,7 @@ export default function PreferencesPage() {
         .filter(n => n.length > 0)
 
       const payload = {
-        preferredCity: preferredCity || null,
+        preferredCity: preferredCity.trim() || null,
         preferredNeighborhoods: neighborhoods.length > 0 ? neighborhoods : null,
         minPrice: minPrice ? parseFloat(minPrice) : null,
         maxPrice: maxPrice ? parseFloat(maxPrice) : null,
@@ -126,14 +154,16 @@ export default function PreferencesPage() {
 
       console.log("📤 Enviando preferencias:", payload)
 
-      const response = await fetch(`${API_URL}/recommendations/preferences`, {
+      const response = await fetch(`${API_URL}/api/recommendations/preferences`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": user?.email || "",
+          "Authorization": `Bearer ${token}`,
         },
         body: JSON.stringify(payload),
       })
+
+      console.log("📥 Status:", response.status)
 
       if (response.ok) {
         setSuccess(true)
@@ -160,6 +190,38 @@ export default function PreferencesPage() {
         ? prev.filter(id => id !== amenityId)
         : [...prev, amenityId]
     )
+  }
+
+  // Validación de solo letras y espacios
+  const handleCityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    if (/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/.test(value)) {
+      setPreferredCity(value)
+    }
+  }
+
+  // Validación de solo números positivos
+  const handleNumberChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    setter: (value: string) => void,
+    allowDecimals = false
+  ) => {
+    const value = e.target.value
+    
+    if (value === "") {
+      setter("")
+      return
+    }
+
+    if (allowDecimals) {
+      if (/^\d*\.?\d*$/.test(value)) {
+        setter(value)
+      }
+    } else {
+      if (/^\d*$/.test(value)) {
+        setter(value)
+      }
+    }
   }
 
   if (!user) return null
@@ -250,9 +312,10 @@ export default function PreferencesPage() {
                   type="text"
                   placeholder="Ej: Pasto"
                   value={preferredCity}
-                  onChange={(e) => setPreferredCity(e.target.value)}
+                  onChange={handleCityChange}
                   className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
                 />
+                <p className="text-xs text-gray-500 mt-1">Solo letras y espacios</p>
               </div>
               <div>
                 <label htmlFor="neighborhoods" className="block text-sm font-medium text-gray-700 mb-2">
@@ -285,12 +348,14 @@ export default function PreferencesPage() {
                 </label>
                 <input
                   id="minPrice"
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
                   placeholder="300000"
                   value={minPrice}
-                  onChange={(e) => setMinPrice(e.target.value)}
+                  onChange={(e) => handleNumberChange(e, setMinPrice, true)}
                   className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
                 />
+                <p className="text-xs text-gray-500 mt-1">Solo números positivos</p>
               </div>
               <div>
                 <label htmlFor="maxPrice" className="block text-sm font-medium text-gray-700 mb-2">
@@ -298,12 +363,14 @@ export default function PreferencesPage() {
                 </label>
                 <input
                   id="maxPrice"
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
                   placeholder="800000"
                   value={maxPrice}
-                  onChange={(e) => setMaxPrice(e.target.value)}
+                  onChange={(e) => handleNumberChange(e, setMaxPrice, true)}
                   className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
                 />
+                <p className="text-xs text-gray-500 mt-1">Solo números positivos</p>
               </div>
             </div>
           </div>
@@ -349,12 +416,13 @@ export default function PreferencesPage() {
                 </label>
                 <input
                   id="bedrooms"
-                  type="number"
-                  min="1"
+                  type="text"
+                  inputMode="numeric"
                   value={minBedrooms}
-                  onChange={(e) => setMinBedrooms(e.target.value)}
+                  onChange={(e) => handleNumberChange(e, setMinBedrooms, false)}
                   className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
                 />
+                <p className="text-xs text-gray-500 mt-1">Solo números enteros</p>
               </div>
               <div>
                 <label htmlFor="bathrooms" className="block text-sm font-medium text-gray-700 mb-2">
@@ -362,12 +430,13 @@ export default function PreferencesPage() {
                 </label>
                 <input
                   id="bathrooms"
-                  type="number"
-                  min="1"
+                  type="text"
+                  inputMode="numeric"
                   value={minBathrooms}
-                  onChange={(e) => setMinBathrooms(e.target.value)}
+                  onChange={(e) => handleNumberChange(e, setMinBathrooms, false)}
                   className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
                 />
+                <p className="text-xs text-gray-500 mt-1">Solo números enteros</p>
               </div>
               <div>
                 <label htmlFor="area" className="block text-sm font-medium text-gray-700 mb-2">
@@ -375,12 +444,14 @@ export default function PreferencesPage() {
                 </label>
                 <input
                   id="area"
-                  type="number"
+                  type="text"
+                  inputMode="decimal"
                   placeholder="50"
                   value={minArea}
-                  onChange={(e) => setMinArea(e.target.value)}
+                  onChange={(e) => handleNumberChange(e, setMinArea, true)}
                   className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
                 />
+                <p className="text-xs text-gray-500 mt-1">Números con decimales permitidos</p>
               </div>
             </div>
           </div>
