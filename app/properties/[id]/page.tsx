@@ -11,7 +11,7 @@ import { useAuth } from "@/lib/auth-context"
 import { useToast } from "@/hooks/use-toast"
 import { isFavorite, addFavorite, removeFavorite } from "@/lib/favorites"
 
-const API_URL = `${process.env.NEXT_PUBLIC_API_URL}/properties`
+const API_URL = `${process.env.NEXT_PUBLIC_API_URL}/properties`  
 
 interface Property {
   id: number
@@ -39,9 +39,7 @@ interface Property {
 }
 
 export default function PropertyDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  // Unwrap params con React.use()
   const { id } = use(params)
-
   const router = useRouter()
   const [property, setProperty] = useState<Property | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -118,29 +116,27 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
   }
 
   const typeColors: Record<string, string> = {
-    CASA: "bg-blue-500/10 text-blue-700",
-    APARTAMENTO: "bg-green-500/10 text-green-700",
-    HABITACION: "bg-purple-500/10 text-purple-700",
-    ESTUDIO: "bg-orange-500/10 text-orange-700",
-    BODEGA: "bg-gray-500/10 text-gray-700",
+    HOUSE: "bg-blue-500/10 text-blue-700",
+    APARTMENT: "bg-green-500/10 text-green-700",
+    ROOM: "bg-purple-500/10 text-purple-700",
+    STUDIO: "bg-orange-500/10 text-orange-700",
   }
 
   const typeLabels: Record<string, string> = {
-    CASA: "Casa",
-    APARTAMENTO: "Apartamento",
-    HABITACION: "Habitación",
-    ESTUDIO: "Estudio",
-    BODEGA: "Bodega",
+    HOUSE: "Casa",
+    APARTMENT: "Apartamento",
+    ROOM: "Habitación",
+    STUDIO: "Estudio",
   }
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-muted">
-        <header className="bg-white border-b">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+        <header className="bg-white/90 backdrop-blur-md border-b shadow-sm">
           <div className="container mx-auto px-4 py-4 flex items-center justify-between">
             <Link href="/properties" className="flex items-center gap-2">
               <Home className="h-6 w-6 text-primary" />
-              <span className="font-serif text-2xl font-bold">RentSpace</span>
+              <span className="font-serif text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">RoomieRent</span>
             </Link>
           </div>
         </header>
@@ -159,13 +155,17 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
   }
 
   return (
-    <div className="min-h-screen bg-muted">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       {/* Header */}
-      <header className="bg-white border-b">
+      <header className="bg-white/90 backdrop-blur-md border-b shadow-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/properties" className="flex items-center gap-2">
-            <Home className="h-6 w-6 text-primary" />
-            <span className="font-serif text-2xl font-bold">RentSpace</span>
+          <Link href="/properties" className="flex items-center gap-3 group">
+            <div className="h-10 w-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+              <Home className="h-5 w-5 text-white" />
+            </div>
+            <span className="font-serif text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              RoomieRent
+            </span>
           </Link>
           <Button variant="outline" size="sm" asChild>
             <Link href="/properties">
@@ -228,7 +228,7 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
                   <Eye className="h-4 w-4" />
                   <span>{property.viewCount} vistas</span>
                 </div>
-                <button className="flex items-center gap-1" onClick={toggleFavorite} aria-label={isFav ? "Quitar de favoritos" : "Agregar a favoritos"}>
+                <button className="flex items-center gap-1" onClick={toggleFavorite}>
                   <Heart className={`h-4 w-4 ${isFav ? "text-red-600 fill-red-600" : ""}`} />
                   <span>{property.favoriteCount} favoritos</span>
                 </button>
@@ -302,9 +302,14 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
                       Contactar por Email
                     </a>
                   </Button>
-                  <Button className="w-full" size="lg" variant="outline">
-                    <Heart className="h-4 w-4 mr-2" />
-                    Guardar en Favoritos
+                  <Button 
+                    className="w-full" 
+                    size="lg" 
+                    variant="outline"
+                    onClick={toggleFavorite}
+                  >
+                    <Heart className={`h-4 w-4 mr-2 ${isFav ? "fill-red-600 text-red-600" : ""}`} />
+                    {isFav ? "Guardado" : "Guardar en Favoritos"}
                   </Button>
                 </div>
 
