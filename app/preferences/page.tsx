@@ -62,7 +62,7 @@ export default function PreferencesPage() {
     try {
       console.log("📤 Cargando preferencias...")
       
-      const response = await fetch(`${API_URL}/api/recommendations/preferences`, {
+      const response = await fetch(`${API_URL}/recommendations/preferences`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -154,7 +154,7 @@ export default function PreferencesPage() {
 
       console.log("📤 Enviando preferencias:", payload)
 
-      const response = await fetch(`${API_URL}/api/recommendations/preferences`, {
+      const response = await fetch(`${API_URL}/recommendations/preferences`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
