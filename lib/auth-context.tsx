@@ -14,7 +14,7 @@ interface User {
 interface AuthContextType {
   user: User | null
   token: string | null
-  login: (email: string, password: string) => Promise<{success: boolean, message?: string}>  // ← CAMBIO AQUÍ
+  login: (email: string, password: string) => Promise<{success: boolean, message?: string}>
   signup: (email: string, password: string, name: string, role: string) => Promise<boolean>
   logout: () => void
   isLoading: boolean
@@ -23,19 +23,14 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-const API_URL = `${process.env.NEXT_PUBLIC_API_URL}/auth`
+const API_URL = `${process.env.NEXT_PUBLIC_API_URL}/api/auth` // ← CORREGIDO
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [token, setToken] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  // ==========================================
-  // CARGAR DATOS AL INICIAR
-  // ==========================================
-
   useEffect(() => {
-    // Solo ejecutar en el cliente
     if (typeof window === "undefined") {
       setIsLoading(false)
       return
@@ -45,13 +40,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const storedUser = localStorage.getItem("rental_user")
       const storedToken = localStorage.getItem("rental_token")
 
+      console.log("🔑 Token guardado:", storedToken?.substring(0, 20) + "...") // ← DEBUG
+
       if (storedUser && storedToken) {
         setUser(JSON.parse(storedUser))
         setToken(storedToken)
       }
     } catch (error) {
       console.error("Error loading auth data:", error)
-      // Limpiar datos corruptos
       localStorage.removeItem("rental_user")
       localStorage.removeItem("rental_token")
     } finally {
@@ -59,56 +55,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  // ==========================================
-  // LOGIN
-  // ==========================================
+  const login = useCallback(async (email: string, password: string): Promise<any> => {
+    try {
+      console.log("📤 Intentando login a:", `${API_URL}/login`) // ← DEBUG
 
-const login = useCallback(async (email: string, password: string): Promise<any> => {
-  try {
-    const response = await fetch(`${API_URL}/login`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ email, password }),
-    });
+      const response = await fetch(`${API_URL}/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      })
 
-    const data = await response.json();
+      const data = await response.json()
 
-    // Si falla el login, devolver mensaje legible
-    if (!response.ok) {
+      if (!response.ok) {
+        return {
+          success: false,
+          message: data.message || "Credenciales incorrectas",
+        }
+      }
+
+      console.log("✅ Login exitoso, token recibido:", data.token?.substring(0, 20) + "...") // ← DEBUG
+
+      const userData: User = {
+        id: data.id,
+        email: data.email,
+        name: data.name,
+        role: data.role,
+      }
+
+      setUser(userData)
+      setToken(data.token)
+
+      localStorage.setItem("rental_user", JSON.stringify(userData))
+      localStorage.setItem("rental_token", data.token)
+
+      return { success: true }
+
+    } catch (error) {
+      console.error("Error en login:", error)
       return {
         success: false,
-        message: data.message || "Credenciales incorrectas",
-      };
+        message: "No se pudo conectar con el servidor",
+      }
     }
-
-    const userData: User = {
-      id: data.id,
-      email: data.email,
-      name: data.name,
-      role: data.role,
-    };
-
-    setUser(userData);
-    setToken(data.token);
-
-    localStorage.setItem("rental_user", JSON.stringify(userData));
-    localStorage.setItem("rental_token", data.token);
-
-    return { success: true };
-
-  } catch (error) {
-    console.error("Error en login:", error);
-    return {
-      success: false,
-      message: "No se pudo conectar con el servidor",
-    };
-  }
-}, []);
-  // ==========================================
-  // SIGNUP
-  // ==========================================
+  }, [])
 
   const signup = useCallback(async (
     email: string,
@@ -119,7 +111,6 @@ const login = useCallback(async (email: string, password: string): Promise<any> 
     try {
       console.log("🟢 Intentando registro con:", { email, name, role })
 
-      // Mapear roles del UI (español) a los valores del backend (enum)
       const mappedRole = role === "PROPIETARIO" ? "LANDLORD" : "TENANT"
 
       const response = await fetch(`${API_URL}/signup`, {
@@ -150,11 +141,9 @@ const login = useCallback(async (email: string, password: string): Promise<any> 
           role: data.role,
         }
 
-        // Actualizar estado
         setUser(userData)
         setToken(data.token)
 
-        // Guardar en localStorage
         localStorage.setItem("rental_user", JSON.stringify(userData))
         localStorage.setItem("rental_token", data.token)
 
@@ -170,23 +159,12 @@ const login = useCallback(async (email: string, password: string): Promise<any> 
     }
   }, [])
 
-  // ==========================================
-  // LOGOUT
-  // ==========================================
-
   const logout = useCallback(() => {
-    // Limpiar estado
     setUser(null)
     setToken(null)
-
-    // Limpiar localStorage
     localStorage.removeItem("rental_user")
     localStorage.removeItem("rental_token")
   }, [])
-
-  // ==========================================
-  // VALOR DEL CONTEXTO
-  // ==========================================
 
   const value: AuthContextType = {
     user,
@@ -205,10 +183,6 @@ const login = useCallback(async (email: string, password: string): Promise<any> 
   )
 }
 
-// ==========================================
-// HOOK PERSONALIZADO
-// ==========================================
-
 export function useAuth() {
   const context = useContext(AuthContext)
   if (context === undefined) {
@@ -216,10 +190,6 @@ export function useAuth() {
   }
   return context
 }
-
-// ==========================================
-// HELPER: Obtener Headers de Autorización
-// ==========================================
 
 export function getAuthHeaders(token?: string | null): HeadersInit {
   const authToken = token || localStorage.getItem("rental_token")

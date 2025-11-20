@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { useAuth } from "@/lib/auth-context"
+import { useAuth, getAuthHeaders } from "@/lib/auth-context"
 import { Home, Plus, Building2, Eye, Heart, MapPin, Bed, Bath, Maximize, Settings, LogOut, ArrowRight, Sparkles, TrendingUp } from "lucide-react"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL
@@ -49,17 +49,17 @@ export default function DashboardPage() {
   }, [user, token, router])
 
   const loadMyProperties = async () => {
-    if (!token) return
+  if (!token) return
 
-    setIsLoading(true)
-    try {
-      console.log("📤 Obteniendo mis propiedades...")
+  setIsLoading(true)
+  try {
+    console.log("📤 Obteniendo mis propiedades...")
+    console.log("🔑 Token:", token?.substring(0, 30) + "...")
 
-      const response = await fetch(`${API_URL}/properties/my-properties`, {
-        headers: {
-          "Authorization": `Bearer ${token}`,
-        },
-      })
+    const response = await fetch(`${API_URL}/properties/my-properties`, {
+      method: "GET",
+      headers: getAuthHeaders(token), 
+    })
 
       console.log("📥 Status:", response.status)
 
