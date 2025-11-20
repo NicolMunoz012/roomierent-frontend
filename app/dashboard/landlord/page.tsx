@@ -38,13 +38,11 @@ export default function DashboardPage() {
       return
     }
 
-    // Si es inquilino, redirigir a la vista de inquilino
     if (user.role === "TENANT") {
       router.push("/dashboard/tenant")
       return
     }
 
-    // Si es propietario, cargar sus propiedades
     if (user.role === "LANDLORD") {
       loadMyProperties()
     }
@@ -57,7 +55,7 @@ export default function DashboardPage() {
     try {
       console.log("📤 Obteniendo mis propiedades...")
 
-      const response = await fetch(`${API_URL}/properties/my-properties`, {
+      const response = await fetch(`${API_URL}/api/properties/my-properties`, {
         headers: {
           "Authorization": `Bearer ${token}`,
         },
@@ -216,12 +214,12 @@ export default function DashboardPage() {
               <div className="h-12 w-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <Building2 className="h-6 w-6 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Mis Propiedades</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Ver Todas</h3>
               <p className="text-sm text-gray-600 mb-4">
-                Ver y gestionar tus publicaciones
+                Explora el catálogo completo
               </p>
               <div className="flex items-center gap-2 text-blue-600 font-medium text-sm">
-                Ver Todas
+                Ir al Catálogo
                 <ArrowRight className="h-4 w-4" />
               </div>
             </button>
@@ -288,7 +286,7 @@ export default function DashboardPage() {
                       </div>
                     )}
                     <div className="absolute top-3 right-3 bg-emerald-600 text-white text-xs font-bold px-3 py-1 rounded-full">
-                      {property.status || 'ACTIVA'}
+                      {property.status || 'AVAILABLE'}
                     </div>
                   </div>
 
