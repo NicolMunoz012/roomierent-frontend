@@ -5,7 +5,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import dynamic from "next/dynamic"
 import { useAuth } from "@/lib/auth-context"
-import { Home, Upload, X, MapPin, Building2, AlertCircle, CheckCircle2, ArrowLeft, Save } from "lucide-react"
+import { Home, Upload, X, MapPin, Building2, AlertCircle, CheckCircle2, ArrowLeft, Save, Plus } from "lucide-react"
 import Link from "next/link"
 
 const LocationMap = dynamic(
@@ -223,7 +223,7 @@ export default function AddPropertyPage() {
 
       console.log("📤 Enviando propiedad:", propertyData)
 
-      const response = await fetch(`${API_URL}/api/properties`, {
+      const response = await fetch(`${API_URL}/properties`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -554,24 +554,32 @@ export default function AddPropertyPage() {
                   </label>
                 </div>
 
-                {/* URL */}
-                <div className="flex gap-2">
-                  <input
-                    type="url"
-                    value={currentImageUrl}
-                    onChange={(e) => setCurrentImageUrl(e.target.value)}
-                    placeholder="O pega una URL de imagen"
-                    disabled={isSubmitting}
-                    className="flex-1 px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleAddImageUrl}
-                    disabled={isSubmitting}
-                    className="px-6 py-2 rounded-lg border-2 border-emerald-500 text-emerald-700 hover:bg-emerald-50 transition-colors"
-                  >
-                    Agregar
-                  </button>
+                {/* URL de imágenes */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Agregar Imágenes por URL
+                  </label>
+                  {[...Array(3)].map((_, index) => (
+                    <div key={index} className="flex gap-2">
+                      <input
+                        type="url"
+                        value={currentImageUrl}
+                        onChange={(e) => setCurrentImageUrl(e.target.value)}
+                        placeholder={`URL de imagen ${index + 1}`}
+                        disabled={isSubmitting}
+                        className="flex-1 px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddImageUrl}
+                        disabled={isSubmitting || !currentImageUrl.trim()}
+                        className="px-6 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Agregar
+                      </button>
+                    </div>
+                  ))}
                 </div>
 
                 {/* Preview */}
