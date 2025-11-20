@@ -3,13 +3,10 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { RoleGuard } from "@/lib/role-guard"
 import { useAuth } from "@/lib/auth-context"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Home, Plus, Building2, BarChart3, MessageSquare, Settings, MapPin, Bed, Bath, Maximize, TrendingUp, Eye } from "lucide-react"
+import { Home, Plus, Building2, Eye, Heart, MapPin, Bed, Bath, Maximize, Settings, LogOut, ArrowRight, Sparkles, TrendingUp } from "lucide-react"
 
-const API_URL = `${process.env.NEXT_PUBLIC_API_URL}/dashboard/landlord`
+const API_URL = process.env.NEXT_PUBLIC_API_URL
 
 interface Property {
   id: number
@@ -29,32 +26,51 @@ interface Property {
   favoriteCount: number
 }
 
-export default function LandlordDashboard() {
-  const { user, logout } = useAuth()
+export default function DashboardPage() {
+  const { user, token, logout } = useAuth()
   const router = useRouter()
   const [properties, setProperties] = useState<Property[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    if (user) {
-      loadProperties()
+    if (!user || !token) {
+      router.push("/login")
+      return
     }
-  }, [user])
 
-  const loadProperties = async () => {
+    // Si es inquilino, redirigir a la vista de inquilino
+    if (user.role === "TENANT") {
+      router.push("/dashboard/tenant")
+      return
+    }
+
+    // Si es propietario, cargar sus propiedades
+    if (user.role === "LANDLORD") {
+      loadMyProperties()
+    }
+  }, [user, token, router])
+
+  const loadMyProperties = async () => {
+    if (!token) return
+
+    setIsLoading(true)
     try {
-      const response = await fetch(`${API_URL}/my-properties`, {
+      console.log("📤 Obteniendo mis propiedades...")
+
+      const response = await fetch(`${API_URL}/api/properties/my-properties`, {
         headers: {
-          "Authorization": user?.email || "",
+          "Authorization": `Bearer ${token}`,
         },
       })
+
+      console.log("📥 Status:", response.status)
 
       if (response.ok) {
         const data = await response.json()
         setProperties(data)
         console.log("✅ Propiedades cargadas:", data.length)
       } else {
-        console.error("❌ Error cargando propiedades:", response.status)
+        console.error("❌ Error:", response.status)
       }
     } catch (error) {
       console.error("❌ Error:", error)
@@ -71,245 +87,282 @@ export default function LandlordDashboard() {
     }).format(price)
   }
 
+  const translateType = (type: string) => {
+    const types: Record<string, string> = {
+      'APARTMENT': 'Apartamento',
+      'HOUSE': 'Casa',
+      'STUDIO': 'Estudio',
+      'ROOM': 'Habitación',
+    }
+    return types[type] || type
+  }
+
   const totalViews = properties.reduce((sum, p) => sum + p.viewCount, 0)
   const totalFavorites = properties.reduce((sum, p) => sum + p.favoriteCount, 0)
 
+  if (!user || user.role !== "LANDLORD") return null
+
   return (
-    <RoleGuard allowedRoles={["LANDLORD"]}>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-emerald-50 to-teal-50">
-        {/* Header */}
-        <header className="bg-white border-b shadow-sm sticky top-0 z-50">
-          <div className="container mx-auto px-4 py-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-emerald-50 to-teal-50">
+      {/* Header */}
+      <header className="bg-white/90 backdrop-blur-md border-b shadow-sm sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <Link href="/dashboard" className="flex items-center gap-3 group">
+              <div className="h-10 w-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Home className="h-5 w-5 text-white" />
+              </div>
+              <span className="font-serif text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                RoomieRent
+              </span>
+              <span className="ml-2 text-xs bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full font-medium">
+                Propietario
+              </span>
+            </Link>
+            <div className="flex items-center gap-4">
+              <span className="hidden md:block text-sm text-gray-600">
+                Hola, <strong className="text-gray-900">{user.name}</strong>
+              </span>
+              <button
+                onClick={logout}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <LogOut className="h-4 w-4" />
+                Cerrar Sesión
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="container mx-auto px-4 py-8">
+        {/* Hero Section */}
+        <div className="mb-8">
+          <h1 className="font-serif text-4xl md:text-5xl font-bold mb-3 bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+            ¡Bienvenido, {user.name}!
+          </h1>
+          <p className="text-gray-600 text-lg">
+            Administra tus propiedades y haz crecer tu negocio inmobiliario
+          </p>
+        </div>
+
+        {/* Statistics Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-white/90 backdrop-blur-md p-6 rounded-2xl shadow-lg border border-emerald-100">
             <div className="flex items-center justify-between">
-              <Link href="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-                <Home className="h-6 w-6 text-primary" />
-                <span className="font-serif text-2xl font-bold">RentSpace</span>
-                <span className="ml-2 text-xs bg-emerald-100 text-emerald-800 px-2 py-1 rounded-full font-medium">
-                  Propietario
-                </span>
-              </Link>
-              <div className="flex items-center gap-4">
-                <Button variant="ghost" size="sm" asChild>
-                  <Link href="/settings">
-                    <Settings className="h-4 w-4 mr-2" />
-                    Configuración
-                  </Link>
-                </Button>
-                <div className="hidden md:block text-sm text-muted-foreground">
-                  Hola, <strong className="text-foreground">{user?.name}</strong>
-                </div>
-                <Button onClick={logout} variant="outline" size="sm">
-                  Cerrar Sesión
-                </Button>
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Tus Propiedades</p>
+                <p className="text-4xl font-bold text-gray-900">{properties.length}</p>
+                <p className="text-xs text-gray-500 mt-1">Inmuebles publicados</p>
+              </div>
+              <div className="h-14 w-14 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-xl flex items-center justify-center">
+                <Building2 className="h-7 w-7 text-emerald-600" />
               </div>
             </div>
           </div>
-        </header>
 
-        {/* Main Content */}
-        <main className="container mx-auto px-4 py-8">
-          {/* Hero Section */}
-          <div className="mb-8">
-            <h1 className="font-serif text-4xl md:text-5xl font-bold mb-3 bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-              ¡Bienvenido, {user?.name}!
-            </h1>
-            <p className="text-muted-foreground text-lg">
-              Administra tus propiedades y haz crecer tu negocio
-            </p>
-          </div>
-
-          {/* Statistics Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <Card className="hover:shadow-md transition-shadow">
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-1">Tus Propiedades</p>
-                    <p className="text-3xl font-bold">{properties.length}</p>
-                    <p className="text-xs text-muted-foreground mt-1">Inmuebles publicados</p>
-                  </div>
-                  <div className="h-14 w-14 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-xl flex items-center justify-center">
-                    <Building2 className="h-7 w-7 text-emerald-600" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-md transition-shadow">
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-1">Visualizaciones</p>
-                    <p className="text-3xl font-bold">{totalViews}</p>
-                    <p className="text-xs text-muted-foreground mt-1">Vistas totales</p>
-                  </div>
-                  <div className="h-14 w-14 bg-gradient-to-br from-blue-100 to-cyan-100 rounded-xl flex items-center justify-center">
-                    <Eye className="h-7 w-7 text-blue-600" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-md transition-shadow">
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-1">Favoritos</p>
-                    <p className="text-3xl font-bold">{totalFavorites}</p>
-                    <p className="text-xs text-muted-foreground mt-1">Total de favoritos</p>
-                  </div>
-                  <div className="h-14 w-14 bg-gradient-to-br from-orange-100 to-red-100 rounded-xl flex items-center justify-center">
-                    <TrendingUp className="h-7 w-7 text-orange-600" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Quick Actions */}
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold mb-4">Acciones Rápidas</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card className="hover:shadow-lg hover:scale-105 transition-all cursor-pointer border-2 hover:border-emerald-300">
-                <CardHeader>
-                  <div className="h-12 w-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center mb-3">
-                    <Plus className="h-6 w-6 text-white" />
-                  </div>
-                  <CardTitle>Nueva Propiedad</CardTitle>
-                  <CardDescription>Publica un nuevo inmueble en renta</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button className="w-full" size="lg" asChild>
-                    <Link href="/add-property">Crear Publicación</Link>
-                  </Button>
-                </CardContent>
-              </Card>
-
-              <Card className="hover:shadow-lg hover:scale-105 transition-all cursor-pointer border-2 hover:border-blue-200">
-                <CardHeader>
-                  <div className="h-12 w-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mb-3">
-                    <Building2 className="h-6 w-6 text-white" />
-                  </div>
-                  <CardTitle>Mis Propiedades</CardTitle>
-                  <CardDescription>Ver y gestionar tus publicaciones</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button variant="outline" className="w-full" size="lg" asChild>
-                    <Link href="/properties">Ver Todas</Link>
-                  </Button>
-                </CardContent>
-              </Card>
-
-              <Card className="hover:shadow-lg hover:scale-105 transition-all cursor-pointer border-2 hover:border-purple-200">
-                <CardHeader>
-                  <div className="h-12 w-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mb-3">
-                    <Settings className="h-6 w-6 text-white" />
-                  </div>
-                  <CardTitle>Configuración</CardTitle>
-                  <CardDescription>Administra tu perfil</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button variant="outline" className="w-full" size="lg" asChild>
-                    <Link href="/settings">Abrir Ajustes</Link>
-                  </Button>
-                </CardContent>
-              </Card>
+          <div className="bg-white/90 backdrop-blur-md p-6 rounded-2xl shadow-lg border border-blue-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Visualizaciones</p>
+                <p className="text-4xl font-bold text-gray-900">{totalViews}</p>
+                <p className="text-xs text-gray-500 mt-1">Vistas totales</p>
+              </div>
+              <div className="h-14 w-14 bg-gradient-to-br from-blue-100 to-cyan-100 rounded-xl flex items-center justify-center">
+                <Eye className="h-7 w-7 text-blue-600" />
+              </div>
             </div>
           </div>
 
-          {/* Properties List */}
-          <Card className="shadow-md">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-2xl">Tus Propiedades</CardTitle>
-                  <CardDescription>Inmuebles que has publicado en RentSpace</CardDescription>
-                </div>
-                <Button asChild>
-                  <Link href="/add-property">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Agregar Propiedad
-                  </Link>
-                </Button>
+          <div className="bg-white/90 backdrop-blur-md p-6 rounded-2xl shadow-lg border border-orange-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Favoritos</p>
+                <p className="text-4xl font-bold text-gray-900">{totalFavorites}</p>
+                <p className="text-xs text-gray-500 mt-1">Total de favoritos</p>
               </div>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="text-center py-12">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-                  <p className="text-muted-foreground">Cargando propiedades...</p>
-                </div>
-              ) : properties.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {properties.map((property) => (
-                    <Card key={property.id} className="overflow-hidden hover:shadow-lg hover:scale-105 transition-all">
-                      <div className="relative h-48">
-                        <img
-                          src={property.imageUrls[0] || "/placeholder.svg"}
-                          alt={property.title}
-                          className="w-full h-full object-cover"
-                        />
-                        <span className="absolute top-2 right-2 bg-primary text-white text-xs px-3 py-1 rounded-full font-medium shadow-md">
-                          {property.status}
-                        </span>
+              <div className="h-14 w-14 bg-gradient-to-br from-orange-100 to-red-100 rounded-xl flex items-center justify-center">
+                <Heart className="h-7 w-7 text-orange-600" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Acciones Rápidas</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <button
+              onClick={() => router.push("/add-property")}
+              className="bg-white/90 backdrop-blur-md p-6 rounded-2xl shadow-lg border-2 border-emerald-200 hover:border-emerald-400 hover:shadow-xl hover:scale-105 transition-all text-left group"
+            >
+              <div className="h-12 w-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <Plus className="h-6 w-6 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Nueva Propiedad</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Publica un nuevo inmueble en renta
+              </p>
+              <div className="flex items-center gap-2 text-emerald-600 font-medium text-sm">
+                Crear Publicación
+                <ArrowRight className="h-4 w-4" />
+              </div>
+            </button>
+
+            <button
+              onClick={() => router.push("/properties")}
+              className="bg-white/90 backdrop-blur-md p-6 rounded-2xl shadow-lg border-2 border-blue-200 hover:border-blue-400 hover:shadow-xl hover:scale-105 transition-all text-left group"
+            >
+              <div className="h-12 w-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <Building2 className="h-6 w-6 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Mis Propiedades</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Ver y gestionar tus publicaciones
+              </p>
+              <div className="flex items-center gap-2 text-blue-600 font-medium text-sm">
+                Ver Todas
+                <ArrowRight className="h-4 w-4" />
+              </div>
+            </button>
+
+            <button
+              onClick={() => router.push("/settings")}
+              className="bg-white/90 backdrop-blur-md p-6 rounded-2xl shadow-lg border-2 border-purple-200 hover:border-purple-400 hover:shadow-xl hover:scale-105 transition-all text-left group"
+            >
+              <div className="h-12 w-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <Settings className="h-6 w-6 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Configuración</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Administra tu perfil y preferencias
+              </p>
+              <div className="flex items-center gap-2 text-purple-600 font-medium text-sm">
+                Abrir Ajustes
+                <ArrowRight className="h-4 w-4" />
+              </div>
+            </button>
+          </div>
+        </div>
+
+        {/* Properties List */}
+        <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-blue-100 p-8">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Tus Propiedades</h2>
+              <p className="text-gray-600 mt-1">Inmuebles que has publicado en RoomieRent</p>
+            </div>
+            <button
+              onClick={() => router.push("/add-property")}
+              className="flex items-center gap-2 px-6 py-3 rounded-xl text-white font-medium bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-lg hover:shadow-xl transition-all"
+            >
+              <Plus className="h-5 w-5" />
+              Agregar Propiedad
+            </button>
+          </div>
+
+          {isLoading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Cargando propiedades...</p>
+            </div>
+          ) : properties.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {properties.map((property) => (
+                <Link
+                  key={property.id}
+                  href={`/properties/${property.id}`}
+                  className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group border border-gray-100"
+                >
+                  {/* Imagen */}
+                  <div className="relative h-48 overflow-hidden">
+                    {property.imageUrls && property.imageUrls.length > 0 ? (
+                      <img
+                        src={property.imageUrls[0]}
+                        alt={property.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                        <Building2 className="h-12 w-12 text-gray-400" />
                       </div>
-                      <CardContent className="p-4">
-                        <h3 className="font-semibold text-lg mb-2 line-clamp-1">{property.title}</h3>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                          <MapPin className="h-4 w-4 flex-shrink-0" />
-                          <span className="line-clamp-1">{property.neighborhood}, {property.city}</span>
-                        </div>
-                        <p className="text-2xl font-bold text-primary mb-3">
-                          {formatPrice(property.price)}
-                          <span className="text-sm font-normal text-muted-foreground">/mes</span>
-                        </p>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
-                          <div className="flex items-center gap-1">
-                            <Bed className="h-4 w-4" />
-                            <span>{property.bedrooms}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Bath className="h-4 w-4" />
-                            <span>{property.bathrooms}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Maximize className="h-4 w-4" />
-                            <span>{property.area}m²</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground pt-3 border-t">
-                          <div className="flex items-center gap-1">
-                            <Eye className="h-3 w-3" />
-                            <span>{property.viewCount} vistas</span>
-                          </div>
-                          <span>•</span>
-                          <span>❤️ {property.favoriteCount} favoritos</span>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-16">
-                  <div className="h-20 w-20 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Building2 className="h-10 w-10 text-emerald-400" />
+                    )}
+                    <div className="absolute top-3 right-3 bg-emerald-600 text-white text-xs font-bold px-3 py-1 rounded-full">
+                      {property.status || 'ACTIVA'}
+                    </div>
                   </div>
-                  <h3 className="text-xl font-semibold mb-2">Aún no tienes propiedades</h3>
-                  <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                    Comienza publicando tu primera propiedad
-                  </p>
-                  <Button size="lg" asChild>
-                    <Link href="/add-property">
-                      <Plus className="h-5 w-5 mr-2" />
-                      Agregar Tu Primera Propiedad
-                    </Link>
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </main>
-      </div>
-    </RoleGuard>
+
+                  {/* Contenido */}
+                  <div className="p-5">
+                    <div className="flex items-start justify-between mb-2">
+                      <h3 className="font-bold text-lg text-gray-900 line-clamp-1">
+                        {property.title}
+                      </h3>
+                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full flex-shrink-0 ml-2">
+                        {translateType(property.type)}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1 text-gray-600 text-sm mb-3">
+                      <MapPin className="h-4 w-4 flex-shrink-0" />
+                      <span className="line-clamp-1">{property.neighborhood}, {property.city}</span>
+                    </div>
+
+                    <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
+                      <div className="flex items-center gap-1">
+                        <Bed className="h-4 w-4" />
+                        <span>{property.bedrooms}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Bath className="h-4 w-4" />
+                        <span>{property.bathrooms}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Maximize className="h-4 w-4" />
+                        <span>{property.area}m²</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-3 border-t">
+                      <p className="text-2xl font-bold text-emerald-600">
+                        {formatPrice(property.price)}
+                        <span className="text-sm font-normal text-gray-500">/mes</span>
+                      </p>
+                      <div className="flex items-center gap-3 text-gray-400 text-xs">
+                        <div className="flex items-center gap-1">
+                          <Eye className="h-4 w-4" />
+                          {property.viewCount}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Heart className="h-4 w-4" />
+                          {property.favoriteCount}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-16">
+              <div className="h-20 w-20 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Building2 className="h-10 w-10 text-emerald-400" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Aún no tienes propiedades</h3>
+              <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                Comienza publicando tu primera propiedad y llega a miles de inquilinos potenciales
+              </p>
+              <button
+                onClick={() => router.push("/add-property")}
+                className="inline-flex items-center gap-2 px-8 py-3 rounded-xl text-white font-medium bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-lg hover:shadow-xl transition-all"
+              >
+                <Plus className="h-5 w-5" />
+                Agregar Tu Primera Propiedad
+              </button>
+            </div>
+          )}
+        </div>
+      </main>
+    </div>
   )
 }
