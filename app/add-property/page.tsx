@@ -44,7 +44,10 @@ export default function AddPropertyPage() {
   const [error, setError] = useState("")
   const [success, setSuccess] = useState(false)
   const [imageUrls, setImageUrls] = useState<string[]>([])
-  const [currentImageUrl, setCurrentImageUrl] = useState("")
+  
+  // ✅ ARREGLADO: Array de URLs individuales
+  const [urlInputs, setUrlInputs] = useState<string[]>([""])
+  
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([])
   const [locationSelected, setLocationSelected] = useState(false)
 
@@ -86,14 +89,37 @@ export default function AddPropertyPage() {
     setLocationSelected(true)
   }
 
-  const handleAddImageUrl = () => {
-    const url = currentImageUrl.trim()
+  // ✅ Agregar más campos de URL
+  const addUrlInput = () => {
+    setUrlInputs([...urlInputs, ""])
+  }
+
+  // ✅ Actualizar URL individual
+  const updateUrlInput = (index: number, value: string) => {
+    const newInputs = [...urlInputs]
+    newInputs[index] = value
+    setUrlInputs(newInputs)
+  }
+
+  // ✅ Agregar URL a la lista de imágenes
+  const handleAddImageUrl = (index: number) => {
+    const url = urlInputs[index].trim()
     if (url && /^https?:\/\/.+\.(jpg|jpeg|png|webp|gif)$/i.test(url)) {
       setImageUrls([...imageUrls, url])
-      setCurrentImageUrl("")
+      // Limpiar solo ese input
+      const newInputs = [...urlInputs]
+      newInputs[index] = ""
+      setUrlInputs(newInputs)
       setError("")
     } else if (url) {
       setError("URL de imagen inválida. Debe terminar en .jpg, .png, .webp o .gif")
+    }
+  }
+
+  // ✅ Remover campo de URL
+  const removeUrlInput = (index: number) => {
+    if (urlInputs.length > 1) {
+      setUrlInputs(urlInputs.filter((_, i) => i !== index))
     }
   }
 
@@ -114,7 +140,6 @@ export default function AddPropertyPage() {
     })
   }
 
-  // Validación solo números
   const handleNumberChange = (
     e: React.ChangeEvent<HTMLInputElement>,
     field: string,
@@ -137,7 +162,6 @@ export default function AddPropertyPage() {
     }
   }
 
-  // Validación solo letras
   const handleCityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
     if (/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/.test(value)) {
@@ -153,51 +177,61 @@ export default function AddPropertyPage() {
     // Validaciones
     if (!formData.title.trim() || formData.title.length < 10) {
       setError("El título debe tener al menos 10 caracteres")
+      window.scrollTo({ top: 0, behavior: 'smooth' })
       return
     }
 
     if (!formData.description.trim() || formData.description.length < 50) {
       setError("La descripción debe tener al menos 50 caracteres")
+      window.scrollTo({ top: 0, behavior: 'smooth' })
       return
     }
 
     if (!formData.city.trim()) {
       setError("La ciudad es requerida")
+      window.scrollTo({ top: 0, behavior: 'smooth' })
       return
     }
 
     if (!formData.neighborhood.trim()) {
       setError("El barrio/sector es requerido")
+      window.scrollTo({ top: 0, behavior: 'smooth' })
       return
     }
 
     if (!formData.address.trim()) {
       setError("La dirección es requerida")
+      window.scrollTo({ top: 0, behavior: 'smooth' })
       return
     }
 
     if (!locationSelected) {
       setError("Debes seleccionar la ubicación en el mapa")
+      window.scrollTo({ top: 0, behavior: 'smooth' })
       return
     }
 
     if (!formData.price || parseFloat(formData.price) < 1000) {
       setError("El precio debe ser mayor a $1,000")
+      window.scrollTo({ top: 0, behavior: 'smooth' })
       return
     }
 
     if (!formData.area || parseFloat(formData.area) < 1) {
       setError("El área debe ser mayor a 1 m²")
+      window.scrollTo({ top: 0, behavior: 'smooth' })
       return
     }
 
     if (imageUrls.length === 0) {
       setError("Debes agregar al menos una imagen")
+      window.scrollTo({ top: 0, behavior: 'smooth' })
       return
     }
 
     if (!token) {
       setError("Debes iniciar sesión para agregar una propiedad")
+      window.scrollTo({ top: 0, behavior: 'smooth' })
       return
     }
 
@@ -232,6 +266,8 @@ export default function AddPropertyPage() {
         body: JSON.stringify(propertyData),
       })
 
+      console.log("📥 Status:", response.status)
+
       if (!response.ok) {
         const errorData = await response.json()
         throw new Error(errorData.message || "Error al crear la propiedad")
@@ -241,6 +277,8 @@ export default function AddPropertyPage() {
       console.log("✅ Propiedad creada:", result)
 
       setSuccess(true)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      
       setTimeout(() => {
         router.push("/dashboard")
       }, 2000)
@@ -248,6 +286,7 @@ export default function AddPropertyPage() {
     } catch (err: any) {
       console.error("❌ Error:", err)
       setError(err.message || "Error al crear la propiedad")
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     } finally {
       setIsSubmitting(false)
     }
@@ -280,7 +319,6 @@ export default function AddPropertyPage() {
 
       <main className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-blue-100 p-8">
-          {/* Header */}
           <div className="flex items-center gap-3 mb-6">
             <div className="h-12 w-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center">
               <Building2 className="h-6 w-6 text-white" />
@@ -296,7 +334,7 @@ export default function AddPropertyPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-8">
-            {/* Alertas */}
+            {/* Alertas ARRIBA */}
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg flex items-start gap-3">
                 <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
@@ -427,7 +465,6 @@ export default function AddPropertyPage() {
                 />
               </div>
 
-              {/* Mapa */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   Ubicación en el Mapa <span className="text-red-500">*</span>
@@ -554,30 +591,52 @@ export default function AddPropertyPage() {
                   </label>
                 </div>
 
-                {/* URL de imágenes */}
+                {/* URL de imágenes - CORREGIDO */}
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Agregar Imágenes por URL
-                  </label>
-                  {[...Array(3)].map((_, index) => (
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      O agregar por URL
+                    </label>
+                    <button
+                      type="button"
+                      onClick={addUrlInput}
+                      disabled={isSubmitting}
+                      className="text-sm text-emerald-600 hover:text-emerald-700 font-medium flex items-center gap-1"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Agregar más
+                    </button>
+                  </div>
+
+                  {urlInputs.map((url, index) => (
                     <div key={index} className="flex gap-2">
                       <input
                         type="url"
-                        value={currentImageUrl}
-                        onChange={(e) => setCurrentImageUrl(e.target.value)}
+                        value={url}
+                        onChange={(e) => updateUrlInput(index, e.target.value)}
                         placeholder={`URL de imagen ${index + 1}`}
                         disabled={isSubmitting}
                         className="flex-1 px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                       />
                       <button
                         type="button"
-                        onClick={handleAddImageUrl}
-                        disabled={isSubmitting || !currentImageUrl.trim()}
+                        onClick={() => handleAddImageUrl(index)}
+                        disabled={isSubmitting || !url.trim()}
                         className="px-6 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                       >
                         <Plus className="h-4 w-4" />
                         Agregar
                       </button>
+                      {urlInputs.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeUrlInput(index)}
+                          disabled={isSubmitting}
+                          className="px-4 py-2 rounded-lg border-2 border-red-300 text-red-600 hover:bg-red-50 transition-colors"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -633,6 +692,14 @@ export default function AddPropertyPage() {
                 </p>
               </div>
             </div>
+
+            {/* Alerta ABAJO también */}
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+                <p className="text-sm">{error}</p>
+              </div>
+            )}
 
             {/* Botones */}
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
