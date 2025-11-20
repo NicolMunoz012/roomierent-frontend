@@ -57,7 +57,7 @@ export default function DashboardPage() {
     try {
       console.log("📤 Obteniendo mis propiedades...")
 
-      const response = await fetch(`${API_URL}/api/properties/my-properties`, {
+      const response = await fetch(`${API_URL}/properties/my-properties`, {
         headers: {
           "Authorization": `Bearer ${token}`,
         },
