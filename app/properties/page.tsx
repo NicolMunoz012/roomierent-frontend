@@ -178,17 +178,24 @@ export default function PropertiesPage() {
                     Dashboard
                   </Link>
                 </Button>
-                <Button variant="ghost" size="sm" asChild className="hover:bg-red-50 hover:text-red-600 active:scale-95 transition-all">
-                  <Link href="/favorites">
-                    <Heart className="h-4 w-4 mr-2 text-red-600" />
-                    Favoritos
-                  </Link>
-                </Button>
+                {user?.role === "TENANT" && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    asChild 
+                    className="hover:bg-red-50 hover:text-red-600 active:scale-95 transition-all"
+                  >
+                    <Link href="/favorites">
+                      <Heart className="h-4 w-4 mr-2 text-red-600" />
+                      Favoritos
+                    </Link>
+                  </Button>
+                )}
                 <span className="text-sm text-muted-foreground hidden md:block">
                   {user.name}
                 </span>
                 <Button onClick={logout} variant="outline" size="sm" className="hover:bg-red-50 hover:border-red-300 hover:text-red-600 active:scale-95 active:bg-red-100 transition-all">
-                  Logout
+                  Cerrar Sesión
                 </Button>
               </>
             ) : (
@@ -384,7 +391,7 @@ export default function PropertiesPage() {
                       <Heart className={`h-4 w-4 transition-all duration-200 ${favoriteIds.includes(property.id) ? "text-red-600 fill-red-600 scale-110" : "text-red-500 hover:text-red-600"}`} />
                     </button>
                   )}  
-                  
+
                   </div>
 
                   <CardContent className="p-6">
