@@ -35,15 +35,17 @@ export async function isFavorite(propertyId: number, authToken: string): Promise
   if (!res.ok) return false;
 
   const data = await res.json();
-  return Boolean(data?.favorite);
+  return Boolean(data?.isFavorite);  
 }
 
 export async function addFavorite(propertyId: number, authToken: string): Promise<{ favoriteCount: number }> {
-  const res = await fetch(`${API_URL}/${propertyId}`, {
+  const res = await fetch(API_URL, {  
     method: "POST",
     headers: {
+      "Content-Type": "application/json",  
       Authorization: `Bearer ${authToken}`,
     },
+    body: JSON.stringify({ propertyId }), 
   });
 
   if (!res.ok) throw new Error("No se pudo agregar a favoritos");

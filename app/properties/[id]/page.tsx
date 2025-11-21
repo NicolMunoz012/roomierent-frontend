@@ -45,7 +45,7 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
   const [isLoading, setIsLoading] = useState(true)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [isFav, setIsFav] = useState<boolean>(false)
-  const { user } = useAuth()
+  const { user, token } = useAuth()
   const { toast } = useToast()
 
   useEffect(() => {
@@ -54,16 +54,16 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
 
   useEffect(() => {
     const loadFavoriteStatus = async () => {
-      if (!user?.email || !id) return
+      if (!token || !id) return 
       try {
-        const fav = await isFavorite(Number(id), user.email)
+        const fav = await isFavorite(Number(id), token)
         setIsFav(fav)
       } catch (e) {
         // ignore
       }
     }
     loadFavoriteStatus()
-  }, [user, id])
+  }, [token, id])
 
   const loadProperty = async () => {
     try {
@@ -86,18 +86,18 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
   }
 
   const toggleFavorite = async () => {
-    if (!user?.email || !property) {
+    if (!token || !property) {
       toast({ title: "Debes iniciar sesión", description: "Inicia sesión para usar favoritos" })
       return
     }
     try {
       if (isFav) {
-        const res = await removeFavorite(property.id, user.email)
+        const res = await removeFavorite(property.id, token)
         setIsFav(false)
         setProperty({ ...property, favoriteCount: res.favoriteCount })
         toast({ title: "Eliminado de favoritos" })
       } else {
-        const res = await addFavorite(property.id, user.email)
+        const res = await addFavorite(property.id, token)
         setIsFav(true)
         setProperty({ ...property, favoriteCount: res.favoriteCount })
         toast({ title: "¡Agregado a tus favoritos!" })
