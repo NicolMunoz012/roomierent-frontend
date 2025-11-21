@@ -1,8 +1,17 @@
 // lib/reviews.ts
+/**
+ * Sistema de gestión de reseñas con estructuras de datos avanzadas
+ * Utiliza: Map (caché), Set (validación), Array (ordenamiento)
+ */
 
 const API_URL = `${process.env.NEXT_PUBLIC_API_URL}/reviews`
 
+// ===== ESTRUCTURAS DE DATOS =====
 
+/**
+ * Map: Caché de reseñas para evitar requests duplicados
+ * Clave: propertyId, Valor: Array de reseñas
+ */
 const reviewsCache = new Map<number, Review[]>()
 
 /**

@@ -5,7 +5,7 @@ import { notFound, useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-//import { ReviewsSection } from "@/components/reviews/ReviewsSection"
+import { ReviewsSection } from "@/components/reviews/ReviewsSection"
 import { Badge } from "@/components/ui/badge"
 import { Bed, Bath, Maximize, MapPin, ArrowLeft, Check, Phone, Mail, User, Home, Heart, Eye } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
@@ -379,10 +379,9 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
           </div>
         </div>
           {/* Reseñas */}
-      {/* Reseñas - COMENTADO TEMPORALMENTE */}
-{/* <div className="mt-8">
-  <ReviewsSection propertyId={property.id} />
-</div> */}
+          <div className="mt-8">
+          <ReviewsSection propertyId={property.id} />
+          </div>
       </main>
     </div>
   )
