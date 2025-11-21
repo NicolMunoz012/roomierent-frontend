@@ -40,8 +40,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const storedUser = localStorage.getItem("rental_user")
       const storedToken = localStorage.getItem("rental_token")
 
-      console.log("🔑 Token guardado:", storedToken?.substring(0, 20) + "...") // ← DEBUG
-
       if (storedUser && storedToken) {
         setUser(JSON.parse(storedUser))
         setToken(storedToken)

@@ -35,7 +35,7 @@ interface Property {
 }
 
 export default function PropertiesPage() {
-  const { user, logout } = useAuth()
+  const { user, token, logout } = useAuth()
   const [properties, setProperties] = useState<Property[]>([])
   const [filteredProperties, setFilteredProperties] = useState<Property[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -52,18 +52,18 @@ export default function PropertiesPage() {
     loadProperties()
   }, [])
 
-  useEffect(() => {
-    const loadFavorites = async () => {
-      if (!user?.email) return
-      try {
-        const ids = await getFavoriteIds(user.email)
-        setFavoriteIds(ids)
-      } catch (e) {
-        console.error("❌ Error cargando favoritos", e)
-      }
+ useEffect(() => {
+  const loadFavorites = async () => {
+    if (!token) return  // Cambiar a token
+    try {
+      const ids = await getFavoriteIds(token)  // Pasar token
+      setFavoriteIds(ids)
+    } catch (e) {
+      console.error("❌ Error cargando favoritos", e)
     }
-    loadFavorites()
-  }, [user])
+  }
+  loadFavorites()
+}, [token])
 
   useEffect(() => {
     applyFilters()
@@ -88,7 +88,7 @@ export default function PropertiesPage() {
   }
 
   const toggleFavorite = async (propertyId: number) => {
-    if (!user?.email) {
+    if (!user?.email || !token) {
       toast({ title: "Debes iniciar sesión", description: "Inicia sesión para usar favoritos" })
       return
     }
@@ -96,24 +96,24 @@ export default function PropertiesPage() {
     try {
       let favoriteCount: number | undefined
       if (isFav) {
-        const res = await removeFavorite(propertyId, user.email)
+        const res = await removeFavorite(propertyId, token)
         favoriteCount = res.favoriteCount
         setFavoriteIds((prev) => prev.filter((id) => id !== propertyId))
         toast({ title: "Eliminado de favoritos" })
       } else {
-        const res = await addFavorite(propertyId, user.email)
+        const res = await addFavorite(propertyId, token)
         favoriteCount = res.favoriteCount
         setFavoriteIds((prev) => [...prev, propertyId])
         toast({ title: "¡Agregado a tus favoritos!" })
       }
       // Actualiza favoriteCount localmente
-      setProperties((prev) => prev.map((p) => p.id === propertyId && favoriteCount !== undefined ? { ...p, favoriteCount } : p))
-      applyFilters()
-    } catch (e: any) {
-      console.error(e)
-      toast({ title: "Error", description: e?.message || "No se pudo actualizar favoritos" })
-    }
-  }
+       setProperties((prev) => prev.map((p) => p.id === propertyId && favoriteCount !== undefined ? { ...p, favoriteCount } : p))
+       applyFilters()
+     } catch (e: any) {
+       console.error(e)
+       toast({ title: "Error", description: e?.message || "No se pudo actualizar favoritos" })
+     }
+}
 
   const applyFilters = () => {
     let filtered = [...properties]

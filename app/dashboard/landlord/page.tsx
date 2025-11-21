@@ -54,7 +54,6 @@ export default function DashboardPage() {
   setIsLoading(true)
   try {
     console.log("📤 Obteniendo mis propiedades...")
-    console.log("🔑 Token:", token?.substring(0, 30) + "...")
 
     const response = await fetch(`${API_URL}/properties/my-properties`, {
       method: "GET",

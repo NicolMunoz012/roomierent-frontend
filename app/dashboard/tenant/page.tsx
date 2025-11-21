@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { RoleGuard } from "@/lib/role-guard"
+import { getFavoriteIds } from "@/lib/favorites"
 import { useAuth, getAuthHeaders } from "@/lib/auth-context"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -17,29 +18,11 @@ export default function TenantDashboard() {
   const [favoritesError, setFavoritesError] = useState<string | null>(null)
 
  useEffect(() => {
-   if (!token) return;
+  if (!token) return;
 
   const fetchFavorites = async () => {
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/favorites/ids`,
-        {
-          method: "GET",
-          headers: getAuthHeaders(token),
-        }
-      );
-
-      if (res.status === 401) {
-        router.push("/login");
-        return;
-      }
-
-      if (!res.ok) {
-        setFavoritesError("No pudimos obtener tus favoritos. Intenta nuevamente.");
-        return;
-      }
-
-      const ids = await res.json();
+      const ids = await getFavoriteIds(token);  // Usar la función
       setSavedProperties(ids || []);
       setFavoritesError(null);
     } catch (error) {
