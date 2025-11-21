@@ -1,13 +1,68 @@
+"use client"
+
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Header } from "@/components/header"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Search, MapPin, HomeIcon, Users, Sparkles, TrendingUp, Shield } from "lucide-react"
-import { PropertyCard } from "@/components/property-card"
-import { MOCK_PROPERTIES } from "@/lib/properties-data"
+import { Search, MapPin, HomeIcon, Users, Sparkles, TrendingUp, Shield, Bed, Bath, Maximize } from "lucide-react"
+
+const API_URL = `${process.env.NEXT_PUBLIC_API_URL}/properties`
+
+interface Property {
+  id: number
+  title: string
+  description: string
+  price: number
+  type: string
+  city: string
+  neighborhood: string
+  bedrooms: number
+  bathrooms: number
+  area: number
+  imageUrls: string[]
+  viewCount: number
+  favoriteCount: number
+}
 
 export default function HomePage() {
-  const featuredProperties = MOCK_PROPERTIES.slice(0, 3)
+  const [featuredProperties, setFeaturedProperties] = useState<Property[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    loadFeaturedProperties()
+  }, [])
+
+  const loadFeaturedProperties = async () => {
+    try {
+      const response = await fetch(API_URL)
+      if (response.ok) {
+        const data = await response.json()
+        // Tomar las últimas 3 propiedades
+        setFeaturedProperties(data.slice(0, 3))
+      }
+    } catch (error) {
+      console.error("Error cargando propiedades:", error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      minimumFractionDigits: 0,
+    }).format(price)
+  }
+
+  const typeLabels: Record<string, string> = {
+    HOUSE: "Casa",
+    APARTMENT: "Apartamento",
+    ROOM: "Habitación",
+    STUDIO: "Estudio",
+    WAREHOUSE: "Bodega",
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -37,9 +92,9 @@ export default function HomePage() {
               
               <div className="flex flex-wrap gap-4">
                 <Button 
-                size="lg" 
-                asChild 
-                className="shadow-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 active:scale-95 active:from-blue-800 active:to-indigo-800"
+                  size="lg" 
+                  asChild 
+                  className="shadow-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 active:scale-95 active:from-blue-800 active:to-indigo-800"
                 >
                   <Link href="/properties">
                     <Search className="mr-2 h-5 w-5" />
@@ -193,18 +248,86 @@ export default function HomePage() {
                 Descubre algunas de las últimas publicaciones disponibles en Colombia
               </p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-              {featuredProperties.map((property) => (
-                <PropertyCard key={property.id} property={property} />
-              ))}
-            </div>
-            <div className="text-center">
-              <Button size="lg" asChild className="shadow-lg">
-                <Link href="/properties">
-                  Ver Todas las Propiedades
-                </Link>
-              </Button>
-            </div>
+
+            {isLoading ? (
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto mb-4"></div>
+                <p className="text-muted-foreground">Cargando propiedades...</p>
+              </div>
+            ) : featuredProperties.length > 0 ? (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
+                  {featuredProperties.map((property) => (
+                    <Link key={property.id} href={`/properties/${property.id}`}>
+                      <Card className="overflow-hidden hover:shadow-2xl hover:shadow-blue-100/50 transition-all duration-300 cursor-pointer group h-full border-2 hover:border-blue-200 hover:scale-[1.02] bg-gradient-to-br from-white to-blue-50/30">
+                        <div className="relative h-56 overflow-hidden">
+                          <img
+                            src={property.imageUrls[0] || "/placeholder.svg"}
+                            alt={property.title}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                          <div className="absolute top-3 left-3">
+                            <span className="bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs font-semibold px-3 py-1 rounded-full shadow-lg">
+                              {typeLabels[property.type] || property.type}
+                            </span>
+                          </div>
+                        </div>
+
+                        <CardContent className="p-6">
+                          <h3 className="font-semibold text-lg mb-3 line-clamp-1 group-hover:text-blue-600 transition-colors duration-200">
+                            {property.title}
+                          </h3>
+
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+                            <MapPin className="h-4 w-4 flex-shrink-0 text-blue-500" />
+                            <span className="line-clamp-1">{property.neighborhood}, {property.city}</span>
+                          </div>
+
+                          <p className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
+                            {formatPrice(property.price)}
+                            <span className="text-sm font-normal text-muted-foreground">/mes</span>
+                          </p>
+
+                          <div className="flex items-center justify-between text-sm text-muted-foreground">
+                            <div className="flex items-center gap-2 bg-blue-50 px-3 py-1 rounded-lg">
+                              <Bed className="h-4 w-4 text-blue-600" />
+                              <span className="font-medium">{property.bedrooms}</span>
+                            </div>
+                            <div className="flex items-center gap-2 bg-purple-50 px-3 py-1 rounded-lg">
+                              <Bath className="h-4 w-4 text-purple-600" />
+                              <span className="font-medium">{property.bathrooms}</span>
+                            </div>
+                            <div className="flex items-center gap-2 bg-green-50 px-3 py-1 rounded-lg">
+                              <Maximize className="h-4 w-4 text-green-600" />
+                              <span className="font-medium">{property.area}m²</span>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  ))}
+                </div>
+                <div className="text-center">
+                  <Button size="lg" asChild className="shadow-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
+                    <Link href="/properties">
+                      Ver Todas las Propiedades
+                    </Link>
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground text-lg mb-4">
+                  Aún no hay propiedades publicadas
+                </p>
+                <Button size="lg" asChild>
+                  <Link href="/signup">
+                    Sé el primero en publicar
+                  </Link>
+                </Button>
+              </div>
+            )}
           </div>
         </section>
 
