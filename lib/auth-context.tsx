@@ -109,14 +109,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log("🟢 Intentando registro con:", { email, name, role })
 
-      const mappedRole = role === "PROPIETARIO" ? "LANDLORD" : "TENANT"
 
       const response = await fetch(`${API_URL}/signup`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, password, name, role: mappedRole }),
+        body: JSON.stringify({  email, password, name, role }),
       })
 
       console.log("🟢 Status del signup:", response.status)
