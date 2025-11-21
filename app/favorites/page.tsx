@@ -100,7 +100,7 @@ export default function FavoritesPage() {
             <Button variant="ghost" size="sm" asChild className="hover:bg-purple-50 hover:text-purple-600">
               <Link href="/dashboard">
                 <Home className="h-4 w-4 mr-2" />
-                Dashboard
+                Panel
               </Link>
             </Button>
           </div>

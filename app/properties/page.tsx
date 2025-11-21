@@ -175,7 +175,7 @@ export default function PropertiesPage() {
                 <Button variant="ghost" size="sm" asChild className="hover:bg-blue-50 hover:text-blue-600 active:scale-95 transition-all">
                   <Link href="/dashboard">
                     <ArrowLeft className="h-4 w-4 mr-2" />
-                    Dashboard
+                    Panel
                   </Link>
                 </Button>
                 {user?.role === "TENANT" && (
