@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useAuth } from "@/lib/auth-context"
 import { useToast } from "@/hooks/use-toast"
 import {
@@ -10,7 +10,6 @@ import {
   deleteReview,
   sortReviews,
   filterByRating,
-  groupByRating,
   calculateLocalStats,
   type Review,
   type ReviewStats,
@@ -53,10 +52,9 @@ export function ReviewsSection({ propertyId }: ReviewsSectionProps) {
   const [comment, setComment] = useState("")
   const [hoveredStar, setHoveredStar] = useState(0)
 
-  // Filtros y ordenamiento (Estructura de datos: Set para filtros activos)
+  // Filtros y ordenamiento
   const [sortBy, setSortBy] = useState<"date" | "rating-high" | "rating-low">("date")
   const [minRating, setMinRating] = useState(1)
-  const [activeFilters, setActiveFilters] = useState(new Set<string>())
 
   // Modal de confirmación
   const [reviewToDelete, setReviewToDelete] = useState<number | null>(null)
@@ -107,11 +105,9 @@ export function ReviewsSection({ propertyId }: ReviewsSectionProps) {
 
       toast({ title: "✅ Reseña publicada" })
 
-      // Limpiar formulario
       setRating(5)
       setComment("")
 
-      // Recargar datos
       await loadData()
     } catch (error: any) {
       toast({
@@ -142,32 +138,32 @@ export function ReviewsSection({ propertyId }: ReviewsSectionProps) {
     }
   }
 
-  // Aplicar filtros y ordenamiento usando estructuras de datos
-  const getFilteredReviews = (): Review[] => {
+  // ✅ CORRECCIÓN: Usar useMemo en lugar de una función que modifica estado
+  const filteredReviews = useMemo(() => {
     let filtered = reviews
 
-    // Filtrar por rating mínimo (Array.filter)
+    // Filtrar por rating mínimo
     if (minRating > 1) {
       filtered = filterByRating(filtered, minRating)
-      activeFilters.add("rating")
-    } else {
-      activeFilters.delete("rating")
     }
 
-    // Ordenar (Array.sort)
+    // Ordenar
     filtered = sortReviews(filtered, sortBy)
 
-    setActiveFilters(new Set(activeFilters)) // Actualizar Set
     return filtered
+  }, [reviews, minRating, sortBy])
+
+  // ✅ CORRECCIÓN: Calcular si hay filtros activos de forma derivada
+  const hasActiveFilters = minRating > 1 || sortBy !== "date"
+
+  // Limpiar filtros
+  const clearFilters = () => {
+    setSortBy("date")
+    setMinRating(1)
   }
 
-  const filteredReviews = getFilteredReviews()
-
-  // Calcular estadísticas locales adicionales
-  const localStats = calculateLocalStats(reviews)
-
-  // Agrupar por rating (Map)
-  const groupedReviews = groupByRating(reviews)
+  // Calcular estadísticas locales
+  const localStats = useMemo(() => calculateLocalStats(reviews), [reviews])
 
   if (isLoading) {
     return (
@@ -192,7 +188,7 @@ export function ReviewsSection({ propertyId }: ReviewsSectionProps) {
             {/* Promedio */}
             <div className="text-center">
               <div className="text-4xl font-bold text-blue-600 mb-2">
-                {stats?.averageRating.toFixed(1) || "0.0"}
+                {stats?.averageRating?.toFixed(1) || "0.0"}
               </div>
               <div className="flex items-center justify-center gap-1 mb-1">
                 {[1, 2, 3, 4, 5].map((star) => (
@@ -240,7 +236,7 @@ export function ReviewsSection({ propertyId }: ReviewsSectionProps) {
             <div className="mt-6 space-y-2">
               <p className="text-sm font-semibold mb-3">Distribución de Calificaciones</p>
               {[5, 4, 3, 2, 1].map((star) => {
-                const count = stats.ratingDistribution[star - 1]
+                const count = stats.ratingDistribution?.[star - 1] || 0
                 const percentage = stats.totalReviews > 0
                   ? Math.round((count / stats.totalReviews) * 100)
                   : 0
@@ -340,15 +336,11 @@ export function ReviewsSection({ propertyId }: ReviewsSectionProps) {
               <Filter className="h-5 w-5" />
               Reseñas ({filteredReviews.length})
             </CardTitle>
-            {activeFilters.size > 0 && (
+            {hasActiveFilters && (
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => {
-                  setSortBy("date")
-                  setMinRating(1)
-                  setActiveFilters(new Set())
-                }}
+                onClick={clearFilters}
               >
                 Limpiar Filtros
               </Button>
