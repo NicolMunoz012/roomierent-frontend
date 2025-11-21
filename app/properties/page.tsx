@@ -370,6 +370,9 @@ export default function PropertiesPage() {
                         {property.type}
                       </span>
                     </div>
+
+                    {/* Botón de favoritos - SOLO para TENANT */}
+                  {user?.role === "TENANT" && (  
                     <button
                       className="absolute top-3 right-3 bg-white/90 hover:bg-white p-2 rounded-full transition-all duration-200 hover:scale-110 shadow-lg hover:shadow-xl"
                       onClick={(e) => {
@@ -380,6 +383,8 @@ export default function PropertiesPage() {
                     >
                       <Heart className={`h-4 w-4 transition-all duration-200 ${favoriteIds.includes(property.id) ? "text-red-600 fill-red-600 scale-110" : "text-red-500 hover:text-red-600"}`} />
                     </button>
+                  )}  
+                  
                   </div>
 
                   <CardContent className="p-6">
