@@ -26,7 +26,7 @@ const API_URL = `${process.env.NEXT_PUBLIC_API_URL}/settings`
 
 export default function SettingsPage() {
   const router = useRouter()
-  const { user, logout } = useAuth()
+  const { user, token, logout } = useAuth()
   const [isDeleting, setIsDeleting] = useState(false)
   const [confirmText, setConfirmText] = useState("")
   const [error, setError] = useState("")
@@ -41,11 +41,13 @@ export default function SettingsPage() {
   }, [user])
 
   const loadPropertyCount = async () => {
+     if (!token) return
+
     setIsLoadingCount(true)
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/properties/my-properties`, {
         headers: {
-          "Authorization": user?.email || "",
+          "Authorization": `Bearer ${token}`,
         },
       })
 
@@ -74,6 +76,11 @@ export default function SettingsPage() {
       return
     }
 
+    if (!token) { 
+      setError("No autenticado")
+      return
+    }
+
     setIsDeleting(true)
     setError("")
 
@@ -81,7 +88,7 @@ export default function SettingsPage() {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/delete-account`, {
         method: "DELETE",
         headers: {
-          "Authorization": user.email,
+          "Authorization": `Bearer ${token}`,
         },
       })
 
