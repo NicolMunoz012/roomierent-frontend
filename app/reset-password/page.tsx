@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Home, Eye, EyeOff, CheckCircle, XCircle } from "lucide-react"
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL  // ← CAMBIO: Eliminé la barra extra
+const API_URL = process.env.NEXT_PUBLIC_API_URL
 
 function ResetPasswordForm() {
   const searchParams = useSearchParams()
@@ -33,6 +33,11 @@ function ResetPasswordForm() {
   const getPasswordStrength = (pass: string) => {
     if (!pass) return { strength: 0, label: "", color: "" }
     
+    // Validar que no tenga espacios
+    if (/\s/.test(pass)) {
+      return { strength: 0, label: "No se permiten espacios", color: "bg-red-500" }
+    }
+    
     let strength = 0
     if (pass.length >= 6) strength++
     if (pass.length >= 10) strength++
@@ -47,25 +52,78 @@ function ResetPasswordForm() {
 
   const passwordStrength = getPasswordStrength(password)
 
+  // Validar contraseña en tiempo real
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setPassword(value)
+    
+    // Limpiar error si el usuario está corrigiendo
+    if (error && !(/\s/.test(value))) {
+      setError("")
+    }
+  }
+
+  // Validar confirmación en tiempo real
+  const handleConfirmPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setConfirmPassword(value)
+    
+    // Limpiar error si el usuario está corrigiendo
+    if (error) {
+      setError("")
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
 
-    if (!password) {
+    // Trim para eliminar espacios al inicio y final
+    const trimmedPassword = password.trim()
+
+    // Validación: campo vacío
+    if (!trimmedPassword) {
       setError("La contraseña es obligatoria")
       return
     }
 
-    if (password.length < 6) {
+    // Validación: no permitir solo espacios
+    if (password.length > 0 && trimmedPassword.length === 0) {
+      setError("La contraseña no puede ser solo espacios en blanco")
+      return
+    }
+
+    // Validación: no permitir espacios en blanco dentro de la contraseña
+    if (/\s/.test(password)) {
+      setError("La contraseña no puede contener espacios en blanco")
+      return
+    }
+
+    // Validación: longitud mínima
+    if (trimmedPassword.length < 6) {
       setError("La contraseña debe tener al menos 6 caracteres")
       return
     }
 
+    // Validación: longitud máxima
+    if (trimmedPassword.length > 50) {
+      setError("La contraseña no puede exceder 50 caracteres")
+      return
+    }
+
+    // Validación: confirmación vacía
+    if (!confirmPassword) {
+      setError("Debes confirmar la contraseña")
+      return
+    }
+
+    // Validación: contraseñas coinciden
     if (password !== confirmPassword) {
       setError("Las contraseñas no coinciden")
       return
     }
 
+    // Validación: token presente
     if (!token) {
       setError("Token de restablecimiento inválido")
       return
@@ -79,7 +137,7 @@ function ResetPasswordForm() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ token, newPassword: password }),
+        body: JSON.stringify({ token, newPassword: trimmedPassword }),
       })
 
       const data = await response.json()
@@ -115,7 +173,7 @@ function ResetPasswordForm() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center p-6">
       <div className="w-full max-w-md">
         
-        {/* Logo - Mismo estilo que login */}
+        {/* Logo */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-3 group">
             <div className="h-12 w-12 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
@@ -130,7 +188,7 @@ function ResetPasswordForm() {
           </p>
         </div>
 
-        {/* Tarjeta principal - Mismo estilo que login */}
+        {/* Tarjeta principal */}
         <div className="bg-white/90 backdrop-blur-md p-8 rounded-2xl shadow-xl border border-blue-100">
           
           {success ? (
@@ -212,7 +270,8 @@ function ResetPasswordForm() {
                       type={showPassword ? "text" : "password"}
                       placeholder="Ingresa tu nueva contraseña"
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      onChange={handlePasswordChange}
+                      maxLength={50}
                       disabled={isLoading}
                       className="w-full px-4 py-2 pr-10 rounded-lg border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                     />
@@ -246,10 +305,15 @@ function ResetPasswordForm() {
                         passwordStrength.strength <= 3 ? "text-yellow-600" :
                         "text-green-600"
                       }`}>
-                        Contraseña: {passwordStrength.label}
+                        {passwordStrength.label && `Contraseña: ${passwordStrength.label}`}
                       </p>
                     </div>
                   )}
+
+                  {/* Mensaje de ayuda */}
+                  <p className="text-xs text-gray-500">
+                    Mínimo 6 caracteres, sin espacios. Usa mayúsculas, números y símbolos para mayor seguridad.
+                  </p>
                 </div>
 
                 {/* Confirmar Contraseña */}
@@ -263,7 +327,8 @@ function ResetPasswordForm() {
                       type={showConfirmPassword ? "text" : "password"}
                       placeholder="Confirma tu nueva contraseña"
                       value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      onChange={handleConfirmPasswordChange}
+                      maxLength={50}
                       disabled={isLoading}
                       className="w-full px-4 py-2 pr-10 rounded-lg border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                     />
@@ -277,15 +342,18 @@ function ResetPasswordForm() {
                     </button>
                   </div>
                   
-                  {confirmPassword && password !== confirmPassword && (
-                    <p className="text-sm text-red-600">Las contraseñas no coinciden</p>
+                  {/* Indicador de coincidencia */}
+                  {confirmPassword && (
+                    <p className={`text-xs ${password === confirmPassword ? "text-green-600" : "text-red-600"}`}>
+                      {password === confirmPassword ? "✓ Las contraseñas coinciden" : "✗ Las contraseñas no coinciden"}
+                    </p>
                   )}
                 </div>
 
                 {/* Botón Submit */}
                 <button
                   type="submit"
-                  disabled={isLoading}
+                  disabled={isLoading || !password || !confirmPassword}
                   className="w-full flex justify-center items-center py-3 px-6 rounded-xl text-base text-white font-medium bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 active:scale-95 focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2 shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                 >
                   {isLoading ? "Actualizando..." : "Actualizar Contraseña"}
